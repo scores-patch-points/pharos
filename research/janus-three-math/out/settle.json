@@ -1,0 +1,50 @@
+{
+ "prereg_sha256": "9a0ae7f85a663b81d70667ca20f0fb5ab194435c3b227a55b73ca92d1a3cc20f",
+ "harness": {
+  "a": {
+   "z": 0.7142857142857143,
+   "ok": true
+  },
+  "b": {
+   "verdict": "PASS",
+   "p": 0.000999000999000999,
+   "ok": true
+  },
+  "c": {
+   "verdict": "FAIL",
+   "p": 1.0,
+   "ok": true
+  },
+  "ok": true
+ },
+ "unit": {
+  "runs": 179,
+  "observed": {
+   "T": 0.06986313512746871,
+   "F": 0.17721518987341772,
+   "contrast": 0.2561355311355311,
+   "informative": 79
+  },
+  "p": 0.9140859140859141,
+  "verdict": "FAIL",
+  "null_T_mean": 0.13516866737754674,
+  "null_T_p95": 0.22628169794960562,
+  "null_F_mean": 0.534620253164557,
+  "null_contrast_mean": -0.05702692539527982
+ },
+ "fingerprint": {
+  "runs": 179,
+  "observed": {
+   "T": 0.15949140201986503,
+   "F": 0.3709677419354839,
+   "contrast": 0.15627584780810586,
+   "informative": 62
+  },
+  "p": 0.5374625374625375,
+  "verdict": "FAIL",
+  "null_T_mean": 0.16740145118164568,
+  "null_T_p95": 0.2687545692763909,
+  "null_F_mean": 0.5865,
+  "null_contrast_mean": -0.04749038904643744
+ }
+}

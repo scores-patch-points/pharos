@@ -1,0 +1,308 @@
+# One Log, Many Projections: Backward Folding Under a Declared Ground
+ · 
+
+## Summary
+Databases that look incompatible mostly differ in decisions they never state: what counts as the same entity, what "later" means, what a missing value means, and which relations matter. If those decisions are ordinary, attributed events in the log, the incompatibility becomes a choice of perspective, and each database model becomes a projection (a fold) of one substrate.
+
+The problem is unstated grounds, not data. Relational, document, graph, and other models each hardcode one answer to identity, time, absence, and relevance.
+
+Single-substrate systems exist and work in narrow bands. Datomic, XTDB, FoundationDB with layers, Postgres with extensions, and log-plus-derived-views all project several models from one core. Their failure points are incremental projection, event schema growth, deletion, and whole-corpus queries.
+
+The wave fold folds only what the question needs, walking the dependency order backward from later state. It cuts rebuild cost, removes most staleness, and makes the cone of evidence the explanation. It does not help whole-corpus queries or deletion, and it moves the hard problems to finding the starting heads and getting the stop rule right.
+
+The ground is a series of events like any other. Authors publish grounds with bylines, a reader's perspective is the ground it adopts, and conflict rules are themselves asserted events. The default for an unresolved contradiction is to surface both sides.
+
+The stopping rule is differences that make no difference. A branch stops when what remains changes nothing in the answer under the ground's baseline, and the stop is recorded as a revisable event.
+Status: this records a design discussion. Nothing here has been checked against the EO///DB or eoreader code. Adoption facts come from the sources listed at the end, and the failure modes marked as general knowledge are not sourced.
+
+## The problem: why databases seem incompatible
+Database families disagree about what a unit of data is, so there is no obvious mapping from one to another.
+Family
+Unit of data
+Examples
+Relational
+Row in a fixed-schema table
+Postgres, MySQL, SQLite
+Document
+Nested record that carries its own structure
+MongoDB, CouchDB
+Key-value
+Opaque value behind a key
+Redis, DynamoDB, RocksDB
+Wide-column
+Sparse rows grouped in column families
+Cassandra, HBase, Bigtable
+Graph
+Node and edge (property graph or RDF triple)
+Neo4j, SPARQL stores
+Time-series
+Timestamped point, append-only
+InfluxDB, TimescaleDB
+Event log
+Immutable event; state is derived
+Kafka, EventStoreDB
+Vector
+Embedding, queried by similarity
+Pinecone, pgvector, Qdrant
+Search
+Inverted index over text
+Elasticsearch, Lucene
+Columnar / OLAP
+Column chunk, scanned in bulk
+ClickHouse, DuckDB, BigQuery
+Replicated / CRDT
+Mergeable edit, no central authority
+Automerge, Yjs, Matrix's event graph
+Spatial
+Geometry with a spatial index
+PostGIS
+Object store
+Blob plus metadata
+S3
+The mismatch shows up on seven axes. Each is a decision a database makes without saying so.
+
+Data model. Tables, trees, graphs, and streams answer "where does this fact live?" differently, and mapping between them loses or invents structure.
+
+Identity. Primary keys, document IDs, URIs, and content hashes each answer "is this the same thing?" in their own way, which makes cross-system entity resolution hard.
+
+Consistency. ACID, eventual consistency, and CRDT convergence cannot be composed without settling for the weakest guarantee.
+
+Schema philosophy. Schema on write, schema on read, or no schema.
+
+Time. Overwrite the current state, keep bitemporal history, or keep an immutable log. Reconciling "what was true then" with "what is true now" is hard across them.
+
+Query paradigm. Set logic, traversal, key lookup, and similarity ranking do not translate into one another.
+
+Absence. SQL NULL, a missing JSON key, and a tombstone mean different things.
+The usual bridges are polyglot persistence (one system per job), ETL or change-data-capture into a shared store, or a common layer such as an event log or triple store that each model can project into.
+
+## Prior art: one substrate, many projections
+Several systems already treat one core as the truth and derive other models from it. Adoption is real but uneven, and the strongest evidence is for narrow cores with few projections.
+System
+Substrate
+Projections
+Evidence of use
+Datomic
+Immutable datoms (entity, attribute, value, transaction)
+Rows, columns, documents, graph, as-of history
+Nubank's primary transactional database; all editions free under Apache 2.0; monthly community newsletter and a DatomicConf announced for 2026 (Datomic blog)
+XTDB
+Immutable, bitemporal records
+SQL:2011 bitemporal tables, XTQL
+v1 stable since 2019; v2 generally available June 2025 (announcement thread), 2.1.0 in December 2025 (release); aimed at audit and compliance, with design partners in production
+FoundationDB
+Transactional ordered key-value store
+Record layer, other layers on top
+Production at Apple and Snowflake; Apple's Record Layer sits under CloudKit and Snowflake uses it for metadata, per a secondary guide that also reports the Document Layer was deprecated
+Postgres with extensions
+One relational engine
+JSONB, vectors, geometry, time-series, graph, full-text
+Very widely deployed; closer to many index types in one engine than a true single substrate (general knowledge)
+Log plus derived views
+Append-only log (Kafka, CDC)
+Search indexes, caches, materialized views, other stores
+Common as plumbing between separate databases, rarely as a principled substrate (general knowledge)
+Matrix
+Signed event graph
+Each client builds its own state view
+In daily use as a messaging substrate; the projection step is left to clients (general knowledge)
+The pattern that works: pick one strongly consistent core (ordered keys, datoms, bitemporal records), commit to a small rigorous model, and build a few projections. No system in this list is also a first-rate graph, vector, columnar, and full-text store at once.
+
+## Weak points of single-substrate systems
+Practitioner reports and vendor documentation agree on where these designs hurt.
+
+Event sourcing as a whole-system substrate. A practitioner roundup opens with a veteran naming it the biggest mistake of the last ten years. Recurring complaints are fast data growth, difficulty querying the log (one team's year with it), and problems that appear only after production, the so-called day-two problems.
+
+Incremental projection. Keeping derived views correct as the substrate changes is the hardest engineering problem. Multi-table joins are the worst case for incremental refresh (pg_trickle write-up). The Postgres extension pg_ivm is not recommended for production and lacks outer joins and ORDER BY. Cassandra's materialized views have no way to automatically detect and fix permanent inconsistency between base and view. Dedicated engines such as Materialize work, but they add another store with its own synchronization problems.
+
+Deletion and erasure. Immutable substrates fight requests to forget. Excision and crypto-shredding are workarounds, not clean answers (general knowledge).
+
+Storage growth and rebuild time. Replaying history to rebuild a projection slows as the log grows (general knowledge).
+
+Projection lag. Read-your-writes across models is hard, and users notice (general knowledge).
+
+Lowest-common-denominator performance. A projection is rarely as fast as a native engine for its model, and a columnar scan and a graph traversal want different physical layouts (general knowledge).
+
+Ecosystem. Datomic and XTDB are centered on Clojure and the JVM, which narrows tooling and hiring (general knowledge).
+
+Semantic burden. The substrate must settle identity, time, and absence once, at the bottom. A wrong answer there is inherited by every projection and is expensive to fix later (general knowledge).
+The rest of this document is about the semantic burden, and about how a backward fold under a declared ground addresses several of the other weak points.
+
+## The wave fold: folding backward in dependency order
+The wave fold folds only what a question requires. It starts from the latest state, walks the dependency order backward, and stops before the beginning of the log. The past is knowable from what came after, because later events depend on, and so point to, earlier ones. Read cost then tracks the size of the question's dependency cone, not the size of the log.
+This is not a new algorithm. It belongs to the family of goal-directed evaluation: the newest-first read path of log-structured stores, backward program slicing, and Datalog's magic-set rewriting. Snapshotting is the conventional version, cutting the replay at a fixed point. The wave fold makes the cut depend on the question.
+
+### What it fixes
+
+Replay and rebuild cost. A projection is computed for the cone of the thing asked about, not rebuilt for the whole log.
+
+Projection staleness. If folds run at read time, there is no materialized view to keep fresh, so the join-delta problem does not arise. Dependencies point only backward and events are immutable, so the result for a given cone can be memoized permanently, as Git or Nix cache by content. New events create new cones and never invalidate old ones.
+
+Debuggability. The cone is the explanation. "Why is this true" and "how was it computed" become the same object.
+
+Identity and absence, partly. A fixed dependency order (existence before structure) gives every projection the same answer about what must exist first, and NUL as a first-class operator covers the missing-versus-null problem.
+
+### What it does not fix, or makes harder
+Limit
+Why it matters
+Whole-corpus questions
+Aggregates and scans have a cone that is the whole log, so nothing is saved and columnar engines win. The wave fold is a tool for selective questions.
+Finding the starting point
+To walk back from "latest" you need the heads for an entity, which means a reverse index of what supersedes or references it. The fold runs backward, but a forward-looking index is still maintained.
+Information-losing events
+"The past is knowable from what came after" holds only if later events preserve what they supersede or point to it. Overwrite-style events destroy information, so a question about what was true then must go back to that point.
+Question-dependent stopping
+Last-write-wins can stop at the first hit. Sums, counts, and "does anything contradict this" cannot.
+Concurrency and late arrival
+Dependency order is causal order, not valid-time order. With several heads (Matrix branches, federation backfill) "latest" is not unique, so starting heads need state resolution. Memoizing per head stays safe, but a late event can change which head answers a question about an entity. Bitemporal systems such as XTDB solve this explicitly.
+Deletion
+Untouched. Erasure needs typed holes in a cone. Matrix redaction already keeps the event skeleton while stripping content, which fits.
+Storage growth
+Unchanged. Only read cost is decoupled from log size.
+Net effect: the weakness moves from rebuild cost to head-finding and stop-rule correctness. That is a better problem to have, but it is the part most worth testing.
+
+## The ground: schema as ordinary events with bylines
+Before folding, the fold needs a ground: the part of the schema relevant to the question that says what the data means from a given perspective. The design commits to two things about it. A ground is a series of events like any other, and each carries a byline. Schema is not a special kind of datum.
+
+### What a ground has to settle
+These are the same decisions every database model makes implicitly, which is why the models look incompatible.
+Decision
+What it fixes in the fold
+Identity criteria
+What counts as the same entity, and what evidence merges two records. This fixes the starting heads.
+Dependency relations
+Which edges the backward walk follows and which are accidental. This fixes the cone.
+Time regime
+Whether "later" means causal order, valid time, or system time, and what "now" means.
+Absence semantics
+Whether a missing value means unknown, not applicable, or retracted.
+Sufficiency
+How much of the cone the question needs. This fixes the stop rule.
+Baseline
+What counts as a difference worth reporting, so a null is declared and not assumed.
+On this view, relational, document, and graph stores are one log folded under different baked-in grounds. A relational schema is one fixed answer to identity, dependency, time, and absence, and a document store is another. The incompatibility was in the unstated grounds, not in the data.
+
+### What follows from grounds being events
+
+Perspective is a selection. Folding from a given perspective means folding under the ground published by a named author at a named version. The reader's adoption of a ground is itself an event, so the regress of "which ground?" ends at the reader.
+
+Competing grounds coexist. Two authors can publish different identity criteria for the same entities. The same cone folded under each gives two answers, and the difference between them is a finding.
+
+Ground evolution is ordinary history. A revised ground is a new event that supersedes or extends an earlier one. Old folds stay valid under the old ground, and a cache keyed by head set and ground event ID needs no special case.
+
+Answers carry authorship. Every result can state which cone, under which ground, by whom.
+
+Publication can stay open. A ground applies only when a reader adopts it, so what needs control is adoption, not publication.
+
+Pieces are just events. Whether a ground is one event or several authored pieces stops being a design question. Composition is whatever later events assert.
+
+Stable grounds can compile to layouts. Without a special schema there is no static fast path, but when the rule events under a fold stop changing, the fold can be compiled into a physical layout. A relational table then becomes a memoized fold under a stable ground.
+
+### Limits
+
+A byline attributes but does not validate. A wrong ground, such as identity criteria that falsely merge two entities, quietly shapes every fold that adopts it. Ground events should carry testable claims, with their predicted structure checked against the log under a declared null, so any reader can falsify a ground.
+
+Authorship is only as strong as the signing. In Matrix, events are signed by the origin server, so a byline is attributable to a homeserver and account, not cryptographically to the person, unless cross-signing or separate signatures are added.
+
+Discovery and endorsement remain open. With open publication, readers need a way to find a good ground. Endorsement events from trusted bylines work, but adoption counts measure popularity, not correctness.
+
+A ground cannot be read off the data. Deriving the first ground from the material it is meant to interpret goes circular, and earlier attempts collapsed to the material's own vocabulary. The ground has to be a received object with a named author, in the same way priors are received gifts that name their giver. The cost of a new domain is therefore the authoring and ratification of its first ground.
+
+## Contradiction, the default of both, and the kernel
+When events contradict, what to do about it is itself a rule that can be asserted. A conflict rule is an ordinary event, and nothing marks it as meta-level.
+
+Rules scope themselves through dependency order. A conflict rule depends on the events it adjudicates, so it sits later in the order and applies only to conflicts that existed when it was written. A conflict that arises later needs a new rule or a more general earlier one. No separate precedence machinery is needed.
+
+Rules that can only look back may be stratified automatically. Datalog needs stratification to keep negation and rule-on-rule recursion well behaved. If rule events can reference only earlier events, the dependency graph is acyclic by construction, which should avoid the non-termination that usually comes with rules stored as data. This needs testing against retraction-style rules.
+
+Precedent exists for each half. Datomic stores its schema as ordinary datoms, RDF Schema is triples, Datalog and Prolog treat rules as facts, and Matrix room configuration such as power levels is ordinary state events. Making conflict resolution an asserted event as well is the unusual part.
+
+### The regress and its stops
+Who resolves conflicts between conflict rules? Another rule, and so on, with no end inside the log. The practical stops are the reader's adoption event and a default for when no rule applies.
+The default is both: surface the contradiction instead of resolving it or failing. This matches the four-valued verdict lattice already used in the Fold (is, is-not, both, neither). Rules then only refine a behavior that is already safe, and a fold never errors on contradiction.
+
+### What stays outside the log
+The evaluator cannot be an event, or reading the log would need a log. Something fixed has to interpret events: the operators, the dependency order, and the "both" default. That kernel is what everything else is built on, and its size is the thing to watch. Anything that creeps into it, such as a hardcoded precedence rule or a built-in notion of identity, makes a ground special again without anyone noticing.
+Open question: whether the kernel is exactly the nine operators plus dependency order, or whether the "both" default must also live there. This document assumes the default is part of the kernel.
+
+## The stopping rule: differences that make no difference
+The backward fold stops when the next step yields a difference but no difference that matters to the question. In the project's vocabulary, that is SIG without INS: the distinction that makes a difference presupposes a difference, and a stop is where the second is missing.
+Because what counts as consequential comes from the ground, depth is perspective-relative. An auditor's ground treats more differences as consequential than a casual reader's, so the same cone stops at different frontiers, and that is correct.
+
+### What the rule buys
+
+Resumable depth. A fold that stopped at a frontier can continue from it, so a reader with a stricter ground picks up where the first stopped.
+
+Auditable stops. An answer can report where it stopped and why: the frontier, the ground, and the baseline that made the remaining differences negligible.
+
+### What the rule needs
+
+Measure against the answer, not the event. "Makes no difference" means the answer would not change if the event were absent or altered. Event size and edit distance are the wrong measures. A cheap two-tier test works: a structural prune (the event touches no slot in the question's declared shape, so it cannot matter under this ground) and a value-level check (it touches a slot but restates what is already there).
+
+Let the question's shape set the test. A second byline repeating the same value changes nothing for "what is the value" and changes everything for "is it corroborated." The fold cannot stop at the first hit when cardinality or standing is part of the question.
+
+Compare against the accumulated answer, not the previous step. Salami slicing is the main attack: a consequential change split into many sub-baseline edits passes a step-wise test every time. Measure each frontier's cumulative effect on the answer at the head. The same lesson came from earlier max-versus-mean and cumulative-versus-trailing-window bugs in the induction work.
+
+Stop per branch, not globally. A quiet stretch can mean convergence or starvation, where the relevant ancestor sits far back behind trivial edits. The dependency order already removes unrelated events from the cone, but a long chain of trivial refinements to an old definition can still hide the important one. Each branch should stop only after reaching a declared sufficient root.
+
+Read the baseline from the ground. The baseline is one of the six ground decisions, so the stop rule needs no extra machinery.
+
+### Recording the stop
+Writing the stop into the log as an event, with its frontier and reason, makes the answer a revisable claim. A later discovery that a deeper event matters can contradict the stop as an ordinary assertion, and the frontier can be memoized and audited like any other fold result. This document recommends it; whether the current design does it is an open question.
+
+## Open problems and tests to run
+The design is argued here, not measured. These are the checks that would show whether it holds.
+
+Head finding. Show how starting heads are located for an entity, and what the reverse index costs to maintain as the log grows.
+
+Stop-rule soundness. On a log with seeded consequential changes split into many small edits, confirm the cumulative-effect test stops no earlier than the full fold would have changed its answer.
+
+Starvation versus convergence. Plant an important ancestor behind a long chain of trivial refinements and check that per-branch sufficiency still reaches it.
+
+Corroboration queries. Confirm the fold does not stop at the first hit when the question's shape asks for standing or source count.
+
+Late arrival. Insert a backfilled event about the past and check which memoized folds stay valid and which head resolution changes.
+
+Concurrent heads. Define how starting heads are chosen when the graph has several, and what the default "both" returns.
+
+Rules that look back. Test whether retraction-style rule events keep fold evaluation terminating and stratified.
+
+Ground falsification. Pick a published ground and check its predicted structure against the log under a declared null.
+
+Compiled layouts. Take a stable ground and compare the fold's cost with a conventional table over the same data.
+
+Erasure. Specify typed holes in a cone and confirm folds report them as such and do not fail or guess.
+
+Kernel size. List everything the evaluator must hardcode and check that none of it is a ground in disguise.
+
+Whole-corpus queries. Measure the fold against a columnar engine on an aggregate, to find where the cone stops paying off.
+Before building, read the actual EO///DB specification and the current fold code against this document. The details above come from discussion, and any place where the implementation already differs should be treated as the better source.
+
+## Sources
+Searched November 14, 2026. Claims marked "general knowledge" in the text are not sourced.
+
+Nubank: Datomic is available free of licensing fees
+
+Datomic blog
+
+XTDB v2 launch
+
+XTDB 2.0 general availability thread
+
+XTDB v2.1.0 release
+
+FoundationDB paper, CACM
+
+FoundationDB real systems guide (secondary source)
+
+Event sourcing anti-patterns
+
+A year with Redis event sourcing
+
+InfoQ: day two problems with CQRS and event sourcing
+
+pg_ivm limitations (Epsio)
+
+pg_trickle on stale materialized views
+
+Cassandra materialized view limitations (DataStax)

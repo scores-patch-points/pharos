@@ -1,0 +1,27 @@
+# Door contract (summary)
+
+A door is `doors/<id>/door.json` (validated against `door.schema.json`) plus `door.mjs`. Verbs: `detect`, `plan`, `apply`, `verify`, `undo`, `status`; `plan` and `apply` are one code path and nothing changes without `--apply`.
+
+- A door returns declarative actions (`write`, `exec`, `setenv`, `spawn`); only the runner executes them, through `Ctx`, which refuses any path, tool or detect-class call the manifest did not declare.
+- Every write: backup record first (`$STATE/backups/<sha256>`), intent in `journal.jsonl`, the change, then a `done` entry. Directories created are journaled and removed on undo when empty.
+- Steps above `writes-files` need their own `--with-*` flag; `default_on` is only legal at `none` and `writes-files`.
+- Tools are invoked by bare name through PATH (so a shim directory records every call). Plan invokes no tool at all (PATH lookup is done in-process); detect-class calls (`--version`, `list`, `getenv`) happen only in apply, verify and detect.
+- Refusals (exit 3): `..` in any path argument, a symlink below the system level that leaves its directory, protected places (the real home itself, every dot-folder of the real home except `.pharos`, its `Library`, the system folders and `/Volumes`, compared without regard to letter case or Unicode form), the real home without `--yes-real-home`. More protected folder names or paths can be supplied at run time (env `PHAROS_PROTECT`, or the untracked file `.git/info/pharos-protect` of the checkout); none is written in this tree.
+- Test hooks: `HOME`, `PHAROS_STATE`, `--target`, `--state`, `--khora-dir`, `--json`, `--explain`, a shim directory first on PATH.
+
+Integrity (amendment A1):
+- Writes are atomic: temp file in the same directory (O_EXCL, O_NOFOLLOW), fsync, rename. A killed run leaves the old file or the new one; the temp name is journaled so undo removes it. A symlink at the target path is replaced, never followed.
+- A lock (`$STATE/lock`, owner pid; a dead owner is taken over) is held for a whole apply and a whole undo; apply re-plans under the lock.
+- The journal's hash chain and seq are verified on every read; a broken chain is refused (exit 3, `JOURNAL_FORGED`). Undo also re-checks each entry against the manifest (declared paths, `init` directories must be the state dir or its parents, reverse commands limited to a short list).
+- Undo that meets a file edited since apply keeps it, keeps the entry, reports it and exits 1; `status` keeps saying `drifted`. Undo removes only what the journal created: backups by their recorded hash, plan files by their recorded name, directories only with rmdir and only if they did not exist before.
+- Targets and state dirs inside any dot-folder of the real home (`.ssh`, `.aws`, `.gnupg`, `.kube`, `.docker`, `.azure`, `.config` and the rest; `.pharos` excepted), the real home itself, and the system folders are refused whatever the flags, in any letter case.
+
+Hardening (amendment A2):
+- Legacy `install <dir>` and `undo <dir>` pass the target guard too, and refuse a target that is itself a symlink.
+- Undo never deletes through a link: a state dir, `backups`, `runs`, `journal.jsonl` or `lock` that is a symlink, or a state dir that resolves outside its root, is refused before anything is removed, and again right before the state files are removed.
+- Undo treats a journal line as data: `setenv` names must be in the door's `touches.env`; reverse commands must match an exact argv shape (`ollama rm <tag>`, `npm unlink -g`, `claude plugin marketplace remove <name>`, `claude plugin uninstall <name@name>`) and a declared working directory; a journaled pid is signalled only if `/bin/ps` (fixed path, read-only, the one call that does not go through PATH) shows the same start time, tool and script.
+- The lock wait is bounded on every path. A lock path that is a directory or a symlink is refused at once. A lock whose pid is not an integer above 1 is judged by age. Limit: a lock whose pid was reused by a live unrelated process blocks until that process ends or the lock file is removed by hand.
+- A new state dir appears under its own name in one step, already holding its first journal line (built beside its place as `<state>.new-<pid>-<hex>`, then renamed), and a state dir this installer created leaves in one step too (renamed to `<state>.gone-<pid>-<hex>`, then emptied). A killed run leaves only such a side folder; the next apply or undo removes it by that exact name shape, when the pid in the name is gone and the folder holds only the installer's own state files. A state dir that exists without a journal is never treated as ours and is never removed; only a dead run's `lock` file in it is. Undo journals the temp name of every restore write (`undo-tmp`) before making it and removes such a leftover on the next undo.
+- A file is hashed again immediately before the rename; if it changed since the backup the write is refused and nothing is replaced. A block refresh journals both the block inserted and the older block it replaced, so undo of an edited file puts the older block back.
+- A value given to a door option that begins with `-` is a usage error (it would reach a tool as an option). The plan lists the directories a write will create (`creates_dirs`).
+- Lint: `doors/` is exempt from the ignorance lint (`tools/ignorance.mjs --exempt doors`), because a door by definition names the repo it installs into. The core (`install/`, `lib/`, `bin/`, `tools/`) names no sibling; the default checkout folder name is supplied by the door (`checkoutDir`).

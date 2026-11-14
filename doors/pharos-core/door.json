@@ -1,0 +1,30 @@
+{
+  "id": "pharos-core",
+  "version": 1,
+  "summary": "Write the pinned pointer (pharos.json) and a holon.json stub into a target repo; same files as the legacy install command.",
+  "kind": "installable",
+  "side_effects": "writes-files",
+  "requires": { "node": ">=20" },
+  "touches": {
+    "files": ["$TARGET/pharos.json", "$TARGET/holon.json", "$STATE", "$STATE/**"],
+    "env": [],
+    "services": [],
+    "network": [],
+    "configs": [],
+    "tools": []
+  },
+  "steps": [
+    {
+      "id": "pointer",
+      "summary": "Write pharos.json (pointer to this library) and holon.json (stub, only if absent) in the target.",
+      "level": "writes-files",
+      "flag": null,
+      "default_on": true,
+      "undo": "restore-bytes"
+    }
+  ],
+  "verify": [
+    { "id": "pointer-exists", "type": "file-exists", "path": "$TARGET/pharos.json" },
+    { "id": "pointer-valid", "type": "pharos-status" }
+  ]
+}

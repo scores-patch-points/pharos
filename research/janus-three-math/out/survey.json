@@ -1,0 +1,192 @@
+{
+ "lines": 5043,
+ "kind": {
+  "reasoning-run": 179,
+  "reasoning-claim": 4864
+ },
+ "role": {
+  "run": 179,
+  "claim": 4864
+ },
+ "giver": {
+  "eoreader7-reason": 5043
+ },
+ "schema": {
+  "EOTObservation@1": 5043
+ },
+ "supersedes": {
+  "null": 5043
+ },
+ "verdict": {
+  "cited": 3,
+  "unaddressed": 4861
+ },
+ "polarity": {
+  "+": 4701,
+  "-": 163
+ },
+ "source": {
+  "hand-authored": 4864
+ },
+ "distinct_rels": 118,
+ "top_rels": [
+  [
+   "be",
+   1800
+  ],
+  [
+   "state:volcano-status",
+   282
+  ],
+  [
+   "have",
+   278
+  ],
+  [
+   "discover",
+   212
+  ],
+  [
+   "acquire",
+   120
+  ],
+  [
+   "weigh",
+   94
+  ],
+  [
+   "stab",
+   90
+  ],
+  [
+   "carry",
+   90
+  ],
+  [
+   "give",
+   90
+  ],
+  [
+   "contain",
+   81
+  ],
+  [
+   "cause",
+   75
+  ],
+  [
+   "create",
+   63
+  ],
+  [
+   "take",
+   62
+  ],
+  [
+   "use",
+   59
+  ],
+  [
+   "state:open-state",
+   57
+  ]
+ ],
+ "sessions": 5,
+ "distinct_grounds": 114,
+ "rolekeys": [
+  [
+   [
+    "ARG0",
+    "ARG1"
+   ],
+   4559
+  ],
+  [
+   [
+    "ARG0"
+   ],
+   58
+  ],
+  [
+   [
+    "ARG1"
+   ],
+   35
+  ],
+  [
+   [
+    "ARG1",
+    "time"
+   ],
+   35
+  ],
+  [
+   [
+    "ARG0",
+    "ARG1",
+    "time"
+   ],
+   30
+  ],
+  [
+   [
+    "ARG0",
+    "ARG1",
+    "ARG1.count"
+   ],
+   27
+  ],
+  [
+   [
+    "ARG1",
+    "in"
+   ],
+   18
+  ],
+  [
+   [
+    "ARG0",
+    "of"
+   ],
+   16
+  ]
+ ],
+ "fingerprint": {
+  "fp": 4864
+ },
+ "basis_prefix": {
+  "reason": 4864
+ },
+ "days": [
+  [
+   "2026-10-19",
+   6
+  ],
+  [
+   "2026-10-21",
+   4474
+  ],
+  [
+   "2026-10-24",
+   563
+  ]
+ ],
+ "run_shape": [
+  [
+   [
+    "claims>0",
+    "notes=0",
+    "true"
+   ],
+   58
+  ],
+  [
+   [
+    "claims>0",
+    "notes=0",
+    "false"
+   ],
+   121
+  ]
+ ]
+}

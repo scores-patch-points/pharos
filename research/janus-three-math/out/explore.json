@@ -1,0 +1,221 @@
+{
+ "arith_units": 716,
+ "arith_runs_per_unit": [
+  [
+   1,
+   145
+  ],
+  [
+   2,
+   157
+  ],
+  [
+   3,
+   50
+  ],
+  [
+   4,
+   25
+  ],
+  [
+   5,
+   23
+  ],
+  [
+   6,
+   14
+  ],
+  [
+   7,
+   46
+  ],
+  [
+   8,
+   28
+  ],
+  [
+   9,
+   119
+  ],
+  [
+   10,
+   14
+  ],
+  [
+   11,
+   4
+  ],
+  [
+   12,
+   4
+  ],
+  [
+   13,
+   1
+  ],
+  [
+   14,
+   4
+  ],
+  [
+   15,
+   1
+  ],
+  [
+   16,
+   26
+  ],
+  [
+   18,
+   55
+  ]
+ ],
+ "arith_same_run_repeats": 97,
+ "arith_units_in_2plus_runs": 571,
+ "arith_units_in_2plus_runs_grounded": 1,
+ "cited_lines": [
+  [
+   0,
+   "<reasoner-home>/cli/claude-code-spiral.mjs"
+  ],
+  [
+   1,
+   "<reasoner-home>/cli/claude-code-spiral.mjs"
+  ],
+  [
+   2,
+   "<reasoner-home>/cli/claude-code-spiral.mjs"
+  ]
+ ],
+ "geo_negations": 37,
+ "geo_neg_units_with_pos_twin_same_ground_any_run": 23,
+ "geo_neg_with_pos_twin_same_run": 80,
+ "geo_ground_readings": 1585,
+ "geo_components_per_reading": [
+  [
+   0,
+   6
+  ],
+  [
+   1,
+   1226
+  ],
+  [
+   2,
+   312
+  ],
+  [
+   3,
+   41
+  ]
+ ],
+ "geo_nodes_per_reading_med_max": [
+  3,
+  10
+ ],
+ "geo_maxdegree_med_max": [
+  2,
+  6
+ ],
+ "geo_grounds": 114,
+ "geo_ground_depths": [
+  [
+   1,
+   113
+  ],
+  [
+   5,
+   1
+  ]
+ ],
+ "geo_cross_ground_pairs_never_compared": 153607,
+ "runs_ok": {
+  "true": 58,
+  "false": 121
+ },
+ "run_errors_sum_med_max": [
+  220,
+  1,
+  7
+ ],
+ "posthoc_18run_grounds": 49,
+ "posthoc_change_count_by_step": [
+  31,
+  31,
+  31,
+  26,
+  26,
+  26,
+  26,
+  26,
+  26,
+  26,
+  26,
+  29,
+  29,
+  36,
+  36,
+  36,
+  36
+ ],
+ "posthoc_runs_carrying_most_changes": [
+  [
+   9,
+   17,
+   "false",
+   3,
+   "2026-10-21T02:24"
+  ],
+  [
+   15,
+   17,
+   "false",
+   2,
+   "2026-10-21T02:25"
+  ],
+  [
+   16,
+   17,
+   "false",
+   3,
+   "2026-10-21T02:25"
+  ],
+  [
+   63,
+   15,
+   "false",
+   7,
+   "2026-10-21T03:28"
+  ],
+  [
+   64,
+   15,
+   "false",
+   3,
+   "2026-10-21T03:28"
+  ],
+  [
+   71,
+   15,
+   "false",
+   5,
+   "2026-10-21T03:29"
+  ],
+  [
+   72,
+   15,
+   "false",
+   3,
+   "2026-10-21T03:29"
+  ],
+  [
+   67,
+   14,
+   "false",
+   1,
+   "2026-10-21T03:29"
+  ]
+ ],
+ "posthoc_changes_returning_to_earlier_reading": 554,
+ "posthoc_changes_to_new_reading": 237
+}

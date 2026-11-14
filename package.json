@@ -1,0 +1,11 @@
+{
+  "name": "pharos",
+  "version": "0.1.0",
+  "description": "The one shared log: weave, watch, fold. Zero dependencies.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "bin": { "pharos": "bin/pharos.mjs" },
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "engines": { "node": ">=20" }
+}

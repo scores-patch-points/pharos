@@ -1,0 +1,38 @@
+{
+  "repo": "scores-patch-points/khora",
+  "sha": "d3ce14a714adc6dbbf373695a414e79555a11187",
+  "license": "MIT",
+  "fetched": "2026-11-12",
+  "how": "gh api repos/scores-patch-points/khora/contents/<path>?ref=<sha> -H \"Accept: application/vnd.github.raw\"",
+  "note": "The khora files listed here are NOT shipped in this tree. The door fetches each one read-only from the public repo at the pinned sha (apply with --with-verify-source) and compares its sha256 to this file; a mismatch fails the step. The refactor is steps/index.mjs plus bin/.",
+  "files": [
+    {
+      "path": "install.sh",
+      "sha256": "efba8d56ef53fd5ec35274071aebf87dde84276f63231f9c16758cdad9f9b570"
+    },
+    {
+      "path": "setup-proxy.sh",
+      "sha256": "496092f4f234d618d49bcab4c130468e9a1665f3c2ed89c035bd03137031cdcb"
+    },
+    {
+      "path": "local-up.sh",
+      "sha256": "4e9aa2e24ff8e14a4714ee06725377c0055246bc359b2133c2332ee7e1c3ca18"
+    },
+    {
+      "path": "integrations/claude-code.sh",
+      "sha256": "050715e3452a376dd4548e0cd473a1ddf09c07c632b366454a4c0b6b07996d23"
+    },
+    {
+      "path": "integrations/curl.sh",
+      "sha256": "4427f6c34ee091c6b19904fbc9d48724a3dc50b7f4920299d4876856a3f3300d"
+    },
+    {
+      "path": "integrations/ollama.sh",
+      "sha256": "ff362ad595194ebeeec023587e791e1644c832408a9c7c2bcd0ea7a220fdbcdf"
+    },
+    {
+      "path": "claude-code/scripts/run.sh",
+      "sha256": "cebf76de669371d625f4f317825d07d6f358997e144c379f541627746960bf3d"
+    }
+  ]
+}

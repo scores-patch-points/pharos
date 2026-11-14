@@ -1,0 +1,325 @@
+{
+  "id": "reader-stack",
+  "version": 1,
+  "summary": "The khora install tools, extracted: non-interactive, dry by default, one flag per step. The khora originals are not shipped; upstream/SOURCE.json pins their commit and hashes.",
+  "kind": "installable",
+  "side_effects": "starts-services",
+  "requires": {
+    "node": ">=20",
+    "tools": [
+      "git",
+      "node",
+      "npm",
+      "brew",
+      "curl",
+      "launchctl",
+      "ollama",
+      "opencode",
+      "claude",
+      "lsof",
+      "gh"
+    ],
+    "platform": [
+      "darwin"
+    ]
+  },
+  "touches": {
+    "files": [
+      "$KHORA_DIR",
+      "$KHORA_DIR/**",
+      "$HOME/.config",
+      "$HOME/.config/opencode",
+      "$HOME/.config/opencode/plugin",
+      "$HOME/.config/opencode/**",
+      "$TARGET/opencode.json",
+      "$TARGET/opencode.jsonc",
+      "$STATE",
+      "$STATE/**"
+    ],
+    "env": [
+      "OLLAMA_KEEP_ALIVE",
+      "OLLAMA_MAX_LOADED_MODELS",
+      "OLLAMA_CONTEXT_LENGTH",
+      "OLLAMA_NUM_PARALLEL",
+      "ER7_URL",
+      "ER7_EXTERNAL_HEIMDALL"
+    ],
+    "services": [
+      {
+        "name": "launchd-ollama-env",
+        "action": "enable"
+      },
+      {
+        "name": "khora-fleet",
+        "action": "start",
+        "port": 11438
+      },
+      {
+        "name": "khora-proxy",
+        "action": "start",
+        "port": 11436
+      }
+    ],
+    "network": [
+      {
+        "host": "github.com",
+        "why": "git clone and fetch of the pinned khora commit",
+        "direction": "read"
+      },
+      {
+        "host": "registry.npmjs.org",
+        "why": "npm ci",
+        "direction": "read"
+      },
+      {
+        "host": "ghcr.io",
+        "why": "brew bottles",
+        "direction": "read"
+      },
+      {
+        "host": "ollama.com",
+        "why": "vendor install script download (not executed)",
+        "direction": "read"
+      },
+      {
+        "host": "registry.ollama.ai",
+        "why": "ollama pull",
+        "direction": "read"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 11436,
+        "why": "the proxy health check; the Claude Code plugin forwards hook events here (or to ER7_URL)",
+        "direction": "send"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 11438,
+        "why": "the fleet supervisor health check",
+        "direction": "read"
+      }
+    ],
+    "configs": [
+      {
+        "owner": "opencode",
+        "path": "$HOME/.config/opencode/opencode.json",
+        "edit": "merge-json"
+      },
+      {
+        "owner": "opencode",
+        "path": "$HOME/.config/opencode/opencode.jsonc",
+        "edit": "merge-json"
+      },
+      {
+        "owner": "opencode",
+        "path": "$TARGET/opencode.json",
+        "edit": "merge-json"
+      },
+      {
+        "owner": "opencode",
+        "path": "$TARGET/opencode.jsonc",
+        "edit": "merge-json"
+      },
+      {
+        "owner": "opencode",
+        "path": "$HOME/.config/opencode/plugin/er7-session.mjs",
+        "edit": "replace-file"
+      }
+    ],
+    "tools": [
+      "git",
+      "node",
+      "npm",
+      "brew",
+      "curl",
+      "launchctl",
+      "ollama",
+      "opencode",
+      "claude",
+      "lsof",
+      "gh"
+    ]
+  },
+  "steps": [
+    {
+      "id": "verify-source",
+      "summary": "Fetch the khora install files read-only at the pinned commit and check each sha256 against upstream/SOURCE.json. Writes nothing.",
+      "level": "none",
+      "flag": "--with-verify-source",
+      "default_on": false,
+      "undo": "none"
+    },
+    {
+      "id": "clone-khora",
+      "summary": "Clone khora and check out the pinned commit (never main) into --khora-dir.",
+      "level": "installs-software",
+      "flag": "--with-clone",
+      "default_on": false,
+      "undo": "remove-created"
+    },
+    {
+      "id": "update-khora",
+      "summary": "Fast-forward an existing khora checkout to the pinned commit only.",
+      "level": "installs-software",
+      "flag": "--with-update",
+      "default_on": false,
+      "undo": "manual-note",
+      "after": [
+        "clone-khora"
+      ]
+    },
+    {
+      "id": "node",
+      "summary": "Install node with brew if it is missing.",
+      "level": "installs-software",
+      "flag": "--with-node-install",
+      "default_on": false,
+      "undo": "manual-note"
+    },
+    {
+      "id": "npm-deps",
+      "summary": "Run npm ci --omit=dev --ignore-scripts in the khora checkout (pinned commit, unchanged tracked files only).",
+      "level": "installs-software",
+      "flag": "--with-npm-deps",
+      "default_on": false,
+      "undo": "remove-created",
+      "after": [
+        "clone-khora"
+      ]
+    },
+    {
+      "id": "ollama",
+      "summary": "Install ollama with brew if it is missing.",
+      "level": "installs-software",
+      "flag": "--with-ollama",
+      "default_on": false,
+      "undo": "manual-note"
+    },
+    {
+      "id": "ollama-vendor-script",
+      "summary": "Download the vendor install script to the state dir and print its sha256; it is NOT run.",
+      "level": "writes-files",
+      "flag": "--with-ollama-vendor-script",
+      "default_on": false,
+      "undo": "remove-created"
+    },
+    {
+      "id": "daemon-env",
+      "summary": "Set the four OLLAMA_* variables for launchd with launchctl setenv; prior values are journaled.",
+      "level": "starts-services",
+      "flag": "--with-launchctl",
+      "default_on": false,
+      "undo": "restore-env"
+    },
+    {
+      "id": "models",
+      "summary": "Pull the model list (default four small models, or --with-models=a,b) with ollama pull.",
+      "level": "installs-software",
+      "flag": "--with-models",
+      "default_on": false,
+      "undo": "reverse-command",
+      "needs_value": true,
+      "after": [
+        "ollama"
+      ]
+    },
+    {
+      "id": "npm-link",
+      "summary": "Run npm link in the khora cli folder (the three bins go on PATH via the global npm prefix).",
+      "level": "installs-software",
+      "flag": "--with-npm-link",
+      "default_on": false,
+      "undo": "reverse-command",
+      "after": [
+        "npm-deps"
+      ]
+    },
+    {
+      "id": "services",
+      "summary": "Start the fleet supervisor (:11438) and the proxy (:11436) with node; logs go to the state dir; refuses on a port conflict.",
+      "level": "starts-services",
+      "flag": "--with-services",
+      "default_on": false,
+      "undo": "stop-journaled-pids",
+      "after": [
+        "npm-deps"
+      ]
+    },
+    {
+      "id": "opencode-config",
+      "summary": "Add the fold provider to each opencode config named by --opencode-config (created when absent, byte backup first).",
+      "level": "edits-host-config",
+      "flag": "--with-opencode",
+      "default_on": false,
+      "undo": "restore-bytes"
+    },
+    {
+      "id": "opencode-plugin",
+      "summary": "Copy the session plugin to the opencode plugin folder (byte backup first).",
+      "level": "edits-host-config",
+      "flag": "--with-opencode-plugin",
+      "default_on": false,
+      "undo": "restore-bytes",
+      "after": [
+        "clone-khora"
+      ]
+    },
+    {
+      "id": "claude-plugin",
+      "summary": "Add the eo-reason plugin from --plugin-source owner/repo@commit (full commit id); the plugin forwards every Claude Code hook event to ER7_URL (blocked if that is off this machine).",
+      "level": "edits-host-config",
+      "flag": "--with-claude-plugin",
+      "default_on": false,
+      "undo": "reverse-command"
+    }
+  ],
+  "verify": [
+    {
+      "id": "khora-checkout",
+      "type": "file-exists",
+      "path": "$KHORA_DIR/proxy.mjs"
+    },
+    {
+      "id": "proxy-answers",
+      "type": "port-answers",
+      "port": 11436
+    }
+  ],
+  "provenance": {
+    "upstream_repo": "scores-patch-points/khora",
+    "upstream_sha": "d3ce14a714adc6dbbf373695a414e79555a11187",
+    "upstream_dir": "doors/reader-stack/upstream",
+    "files": [
+      {
+        "path": "install.sh",
+        "sha256": "efba8d56ef53fd5ec35274071aebf87dde84276f63231f9c16758cdad9f9b570"
+      },
+      {
+        "path": "setup-proxy.sh",
+        "sha256": "496092f4f234d618d49bcab4c130468e9a1665f3c2ed89c035bd03137031cdcb"
+      },
+      {
+        "path": "local-up.sh",
+        "sha256": "4e9aa2e24ff8e14a4714ee06725377c0055246bc359b2133c2332ee7e1c3ca18"
+      },
+      {
+        "path": "integrations/claude-code.sh",
+        "sha256": "050715e3452a376dd4548e0cd473a1ddf09c07c632b366454a4c0b6b07996d23"
+      },
+      {
+        "path": "integrations/curl.sh",
+        "sha256": "4427f6c34ee091c6b19904fbc9d48724a3dc50b7f4920299d4876856a3f3300d"
+      },
+      {
+        "path": "integrations/ollama.sh",
+        "sha256": "ff362ad595194ebeeec023587e791e1644c832408a9c7c2bcd0ea7a220fdbcdf"
+      },
+      {
+        "path": "claude-code/scripts/run.sh",
+        "sha256": "cebf76de669371d625f4f317825d07d6f358997e144c379f541627746960bf3d"
+      }
+    ],
+    "note": "only SOURCE.json is shipped there; the files themselves are fetched and verified"
+  },
+  "license_note": "khora is MIT (see THIRD-PARTY.md). Its files are not copied into this tree; they are fetched at the pinned commit and hash-checked. The refactor in this folder is released with pharos."
+}

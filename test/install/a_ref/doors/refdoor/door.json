@@ -1,0 +1,13 @@
+{
+  "id": "refdoor", "version": 1, "summary": "reference door for validating the rig", "kind": "installable",
+  "side_effects": "starts-services",
+  "requires": { "tools": ["launchctl"] },
+  "touches": {
+    "files": ["$TARGET/REF.txt", "$TARGET/AGENTS.md", "$STATE/**"],
+    "env": ["REF_VAR"], "services": [], "network": [], "configs": [], "tools": ["launchctl"]
+  },
+  "steps": [
+    { "id": "write-ref", "level": "writes-files", "summary": "write REF.txt and an AGENTS.md block", "flag": null, "default_on": true, "undo": "restore-bytes" },
+    { "id": "daemon-env", "level": "starts-services", "summary": "launchctl setenv REF_VAR", "flag": "--with-launchctl", "undo": "restore-env" }
+  ]
+}

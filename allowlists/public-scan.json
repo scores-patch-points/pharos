@@ -1,0 +1,30 @@
+{
+  "hosts": [
+    "127.0.0.1",
+    "localhost",
+    "github.com",
+    "registry.npmjs.org",
+    "ghcr.io",
+    "ollama.com",
+    "registry.ollama.ai",
+    "opencode.ai",
+    "nodejs.org",
+    "json-schema.org",
+    "example.com",
+    "example.org",
+    "example.invalid",
+    "api.github.com"
+  ],
+  "emails": [
+    "nuser@example.com"
+  ],
+  "allow": [
+    {
+      "path": "allowlists/**",
+      "categories": [
+        "private-name"
+      ],
+      "reason": "the allowlist names what it allows"
+    }
+  ]
+}

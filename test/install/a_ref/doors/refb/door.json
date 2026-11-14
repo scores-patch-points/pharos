@@ -1,0 +1,7 @@
+{
+  "id": "refb", "version": 1, "summary": "second reference door", "kind": "installable",
+  "side_effects": "writes-files",
+  "requires": {},
+  "touches": { "files": ["$TARGET/REFB.txt", "$STATE/**"], "env": [], "services": [], "network": [], "configs": [], "tools": [] },
+  "steps": [ { "id": "write-refb", "level": "writes-files", "summary": "write REFB.txt", "flag": null, "default_on": true, "undo": "remove-created" } ]
+}

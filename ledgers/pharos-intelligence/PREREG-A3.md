@@ -1,0 +1,7 @@
+# Amendment A3: prompt and tool descriptions are frozen on the dev set only
+
+Written 2026-11-13 BEFORE any real question was sealed and before any real-engine result. Stamped with `.sha256` and `.time`. Adds to PREREG sections 6 and 8.
+
+Found at first contact with qwen3:4b through the adapter (three STUB questions, no claim about the pharos): with the stub's tool descriptions the model called `range` with an invented kind and invented dates, got the same empty result eight times, and ended on `unknown`; it never tried `ask` on the clip the question names. Whether that is the model or the wording of the tool descriptions cannot be told without tuning, and tuning on the questions that decide the verdict would be a leak.
+
+Rule: the system prompt, the tool names, and the one-line tool descriptions are written and adjusted ONLY against the dev split (QSET-SPEC section 5; never the test split), then frozen: the final text is hashed (sha256 of `lib/controller.mjs` prompts and the engine adapter's `tools()` output) and the hash and time are recorded in a stamped file BEFORE the first test-split run. The same text is used for every model and every arm. Each tuning round on dev is logged (what changed, dev accuracy before and after) in `PROMPT-TUNING.md`; dev numbers are never used in a verdict. If a model fails the protocol on dev after reasonable tuning, that is reported as that model's result (M8 and accuracy), not worked around per model.

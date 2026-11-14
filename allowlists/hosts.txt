@@ -1,0 +1,11 @@
+# Hosts and IPs that may appear in the release tree. One per line; "*.suffix" matches subdomains.
+# Read by the I6 oracle (test/install/b_lib.mjs); the shipped scanner reads allowlists/public-scan.json.
+127.0.0.1
+localhost
+github.com
+ollama.com
+opencode.ai
+nodejs.org
+json-schema.org
+example.com
+example.invalid

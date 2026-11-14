@@ -1,0 +1,32 @@
+{
+  "id": "agents-md",
+  "version": 1,
+  "summary": "Add an idempotent marked block to AGENTS.md (or CLAUDE.md with --file) that points agents to pharos; undo removes exactly that block.",
+  "kind": "installable",
+  "side_effects": "writes-files",
+  "requires": { "node": ">=20" },
+  "touches": {
+    "files": ["$TARGET/AGENTS.md", "$TARGET/CLAUDE.md", "$STATE", "$STATE/**"],
+    "env": [],
+    "services": [],
+    "network": [],
+    "configs": [
+      { "owner": "agents", "path": "$TARGET/AGENTS.md", "edit": "marked-block" },
+      { "owner": "agents", "path": "$TARGET/CLAUDE.md", "edit": "marked-block" }
+    ],
+    "tools": []
+  },
+  "steps": [
+    {
+      "id": "block",
+      "summary": "Insert or refresh the pharos block in AGENTS.md (default) or CLAUDE.md (--file).",
+      "level": "writes-files",
+      "flag": null,
+      "default_on": true,
+      "undo": "restore-bytes"
+    }
+  ],
+  "verify": [
+    { "id": "block-present", "type": "block-present", "path": "$TARGET/AGENTS.md", "command": ["agents-md"] }
+  ]
+}

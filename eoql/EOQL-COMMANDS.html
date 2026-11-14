@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EOQL: 27 commands</title>
+<style>
+:root{--bg:#fbfaf7;--ink:#1d1b18;--mute:#6b665e;--line:#ddd6c8;--code:#f1ece1;--head:#efe9dc}
+@media (prefers-color-scheme:dark){:root{--bg:#161412;--ink:#ece7de;--mute:#a39c90;--line:#34302a;--code:#26221e;--head:#2a2621}}
+body{margin:0;padding:24px;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+h1{margin:0 0 4px;font-size:24px} p{color:var(--mute);margin:4px 0 14px;max-width:760px}
+table{border-collapse:collapse;width:100%;max-width:1000px}
+th,td{border:1px solid var(--line);padding:8px 10px;vertical-align:top;text-align:left}
+thead th{background:var(--head)} tbody th{background:var(--head);width:220px;font-weight:400}
+tbody th b{font-size:18px} tbody th div{color:var(--mute);font-size:13px;margin-top:2px}
+code{background:var(--code);padding:2px 7px;border-radius:4px;font:600 15px ui-monospace,Menlo,monospace}
+td div{margin-top:6px;font-size:14px}
+pre{background:var(--code);padding:10px 12px;border-radius:6px;font:13px ui-monospace,Menlo,monospace;max-width:760px;overflow:auto}
+</style></head><body>
+<h1>EOQL: 27 commands</h1>
+<p>Nine operators, each in three grains. The bare name is Figure (the thing). A minus goes down to Ground (declarations, the schema underneath). A plus goes up to Pattern (what is built on top and written back). Prefix notation: the operator comes first and nests.</p>
+<pre>INS- kind:clip        declare a kind
+INS  clip:7           make a thing
+INS+ view:open        write a pattern back
+EVA SEG- x            judge the things in a cut of the ground
+NUL (CON a)           ask what a links to; change nothing
+SEG 7 4               seven cut at four: 3 (subtraction)
+SIG+ q:kind e         leave a trail: this kind of question was answered at e
+
+A SIG is never part of an answer: remove every SIG and no determined answer changes.
+Anything that stops early (a limit, a budget, the first hit) must say what range it left unread.
+Evaporation is not a command: a trail's strength is read over a recent window.</pre>
+<table><thead><tr><th>operator</th><th>Ground <code>-</code></th><th>Figure</th><th>Pattern <code>+</code></th></tr></thead>
+<tbody>
+<tr><th><b>NUL</b><div>hold: look without changing anything (4 NUL 4 is 4)</div></th><td><code>NUL-</code><div>hold the ground as it is</div></td><td><code>NUL</code><div>look at a thing without changing it</div></td><td><code>NUL+</code><div>look at a pattern without changing it</div></td></tr>
+<tr><th><b>SIG</b><div>signal: the pheromone trail. A pointer with no value that orders where to look; presence can only cause more looking, absence proves nothing</div></th><td><code>SIG-</code><div>a deposit: a small, anonymous mark that a region was used</div></td><td><code>SIG</code><div>a pointer bound to one entry</div></td><td><code>SIG+</code><div>the trail a reader follows, computed over deposits, never stored</div></td></tr>
+<tr><th><b>INS</b><div>bring into being</div></th><td><code>INS-</code><div>declare a kind</div></td><td><code>INS</code><div>make a thing</div></td><td><code>INS+</code><div>write a pattern back</div></td></tr>
+<tr><th><b>SEG</b><div>cut, separate</div></th><td><code>SEG-</code><div>cut declarations</div></td><td><code>SEG</code><div>cut things</div></td><td><code>SEG+</code><div>cut patterns</div></td></tr>
+<tr><th><b>CON</b><div>connect, follow</div></th><td><code>CON-</code><div>link or trace declarations</div></td><td><code>CON</code><div>link or trace things</div></td><td><code>CON+</code><div>link or trace patterns</div></td></tr>
+<tr><th><b>SYN</b><div>synthesize, merge, aggregate</div></th><td><code>SYN-</code><div>merge declarations</div></td><td><code>SYN</code><div>merge or count things</div></td><td><code>SYN+</code><div>merge patterns</div></td></tr>
+<tr><th><b>DEF</b><div>define, fix the frame</div></th><td><code>DEF-</code><div>fix the ground (as of when)</div></td><td><code>DEF</code><div>fix a thing's value</div></td><td><code>DEF+</code><div>define a view or loop</div></td></tr>
+<tr><th><b>EVA</b><div>evaluate, judge</div></th><td><code>EVA-</code><div>judge declarations</div></td><td><code>EVA</code><div>judge things</div></td><td><code>EVA+</code><div>judge patterns</div></td></tr>
+<tr><th><b>REC</b><div>recontextualize, reinterpret</div></th><td><code>REC-</code><div>reinterpret the ground (new schema)</div></td><td><code>REC</code><div>reinterpret things</div></td><td><code>REC+</code><div>reinterpret patterns</div></td></tr>
+</tbody></table>
+</body></html>

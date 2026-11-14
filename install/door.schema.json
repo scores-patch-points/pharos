@@ -1,0 +1,425 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pharos/door.schema.json",
+  "title": "pharos door manifest",
+  "description": "doors/<id>/door.json. Declares everything a door may touch. The runner enforces it: an undeclared path, env var, service, host, config or tool call is a failure (PREREG I2). Paths use tokens ($HOME, $TARGET, $STATE, $KHORA_DIR), never absolute personal paths.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "summary",
+    "side_effects",
+    "requires",
+    "touches",
+    "steps"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "kind": {
+      "enum": [
+        "installable",
+        "detect-only",
+        "pointer"
+      ],
+      "default": "installable",
+      "description": "detect-only: plan prints 'not installable from the public tree', apply exits non-zero. pointer: metadata only."
+    },
+    "side_effects": {
+      "$ref": "#/$defs/level",
+      "description": "Highest level of any step. Must equal the max over steps (runner checks)."
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "doors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/toolname"
+          },
+          "uniqueItems": true,
+          "description": "External commands detect may probe (by name, via PATH)."
+        },
+        "node": {
+          "type": "string",
+          "description": "semver range, e.g. >=20"
+        },
+        "platform": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "darwin",
+              "linux",
+              "win32"
+            ]
+          }
+        }
+      }
+    },
+    "touches": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "files",
+        "env",
+        "services",
+        "network",
+        "configs",
+        "tools"
+      ],
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pathpattern"
+          },
+          "description": "Paths or globs the door may create/modify/delete, tokenised. Anything else changed is an I2 failure."
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          },
+          "description": "Environment variables read or set (launchd-wide ones included)."
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "action"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "action": {
+                "enum": [
+                  "start",
+                  "stop",
+                  "enable",
+                  "disable"
+                ]
+              },
+              "port": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              }
+            }
+          }
+        },
+        "network": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "host",
+              "why"
+            ],
+            "properties": {
+              "host": {
+                "type": "string"
+              },
+              "port": {
+                "type": "integer"
+              },
+              "why": {
+                "type": "string"
+              },
+              "direction": {
+                "enum": [
+                  "read",
+                  "send"
+                ],
+                "default": "read"
+              }
+            }
+          },
+          "description": "Every host contacted. 127.0.0.1 entries still declared. send = user data leaves the process."
+        },
+        "configs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "owner",
+              "path",
+              "edit"
+            ],
+            "properties": {
+              "owner": {
+                "type": "string",
+                "description": "Whose config (opencode, claude-code, shell-profile, ...)."
+              },
+              "path": {
+                "$ref": "#/$defs/pathpattern"
+              },
+              "edit": {
+                "enum": [
+                  "create",
+                  "merge-json",
+                  "marked-block",
+                  "replace-file"
+                ]
+              }
+            }
+          },
+          "description": "Host configs edited. Each needs a byte backup keyed by sha256 before the edit."
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/toolname"
+          },
+          "uniqueItems": true,
+          "description": "External commands that may be INVOKED (brew, curl, launchctl, ollama, npm, opencode, ...). Any other recorded shim call is an I2 failure."
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    },
+    "verify": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/check"
+      },
+      "description": "Read-only checks run by `verify` and after apply."
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "upstream_repo": {
+          "type": "string"
+        },
+        "upstream_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "upstream_dir": {
+          "type": "string"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "license_note": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "level": {
+      "enum": [
+        "none",
+        "writes-files",
+        "edits-host-config",
+        "installs-software",
+        "starts-services"
+      ],
+      "description": "Ordered ladder; each level includes the ones before it. starts-services and installs-software are not ordered relative to each other for gating: each needs its own flag."
+    },
+    "toolname": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._+-]+$",
+      "description": "A command name only, never a path."
+    },
+    "pathpattern": {
+      "type": "string",
+      "pattern": "^\\$(HOME|TARGET|STATE|KHORA_DIR)(/[^/]+)*$",
+      "not": {
+        "pattern": "(^|/)\\.\\.(/|$)"
+      },
+      "description": "Must start with a token; no '..' segment; globs (* and **) allowed in segments."
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "file-exists",
+            "file-sha256",
+            "block-present",
+            "json-valid",
+            "command-ok",
+            "port-answers",
+            "pharos-status"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "port": {
+          "type": "integer"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "level",
+        "summary"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/$defs/level"
+        },
+        "flag": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^--[a-z][a-z0-9-]*$",
+          "description": "Own opt-in flag. null only for level none and writes-files steps inside $TARGET/$STATE. Any step above writes-files must have a flag."
+        },
+        "default_on": {
+          "type": "boolean",
+          "default": false,
+          "description": "Runs on --apply without its flag. Allowed only for level none or writes-files; the runner rejects a manifest that sets it higher."
+        },
+        "needs_value": {
+          "type": "boolean",
+          "default": false
+        },
+        "after": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Step ids that must apply first."
+        },
+        "touches": {
+          "type": "object",
+          "description": "Optional narrowing of door touches for this step (same shape, subset). Used for per-step plan output."
+        },
+        "undo": {
+          "enum": [
+            "restore-bytes",
+            "remove-created",
+            "restore-env",
+            "stop-journaled-pids",
+            "reverse-command",
+            "manual-note",
+            "none"
+          ],
+          "description": "How the journal reverses it. manual-note: printed, never run (brew installs of software pharos did not journal)."
+        },
+        "reverse_command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "idempotent": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "level": {
+                "enum": [
+                  "edits-host-config",
+                  "installs-software",
+                  "starts-services"
+                ]
+              }
+            },
+            "required": [
+              "level"
+            ]
+          },
+          "then": {
+            "required": [
+              "flag",
+              "undo"
+            ],
+            "properties": {
+              "flag": {
+                "type": "string"
+              },
+              "default_on": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
