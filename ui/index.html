@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pharos log</title>
+
+<style>
+:root{--blue:#6fa6cb;--copper:#cf955c;--violet:#9f82c6;--bg:#241a3a;--panel:#2c2148;--ink:#e8e1f4;--mute:#b8aed3;--line:#3d3160;--accent:#9f82c6;--hit:#33275a;--bad:#cf955c;--ok:#6fa6cb}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 Outfit,ui-sans-serif,system-ui,sans-serif;display:grid;grid-template-rows:auto auto 1fr}
+.mono,code,pre,aside h3,th,.stat span,.tag,.cell,.pager{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}.mono,code,pre{font-size:12px;font-weight:500}
+.glyph{display:inline-block;width:1.1em;text-align:center}
+header{display:flex;gap:16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:16px;margin:0;letter-spacing:.02em}header .dir{color:var(--mute);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat{display:flex;gap:4px;align-items:baseline}.stat b{font-size:15px}.stat span{color:var(--mute);font-size:12px}
+.stat.warn b{color:var(--bad)}.live{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.bar{display:flex;gap:8px;padding:8px 16px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap}
+input,select,button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 9px}
+input[type=search]{flex:1;min-width:200px}button{cursor:pointer}button:hover{border-color:var(--accent)}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--hit);border:1px solid var(--line);border-radius:99px;padding:2px 4px 2px 10px;font-size:12px}
+.chip button{border:0;background:none;padding:0 6px;color:var(--mute)}
+main{display:grid;grid-template-columns:260px minmax(0,1fr) 420px;min-height:0}
+aside,section,.detail{overflow:auto;min-height:0}
+aside{border-right:1px solid var(--line);padding:12px 14px}
+aside h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:14px 0 6px}aside h3:first-child{margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.cell{border:1px solid var(--line);border-radius:4px;padding:3px 2px;text-align:center;font-size:11px;cursor:pointer;background:var(--panel);position:relative}
+.cell.on{outline:2px solid var(--accent)}.cell.zero{opacity:.35;cursor:default}.cell .op{font-weight:600}.cell .n{display:block;color:var(--mute);font-size:10px}
+.cell i{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:4px 0 0 4px}
+.gh{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;font-size:10px;color:var(--mute);text-align:center;margin-bottom:2px}
+.fl{display:flex;flex-direction:column;gap:1px}.fl a{display:flex;justify-content:space-between;gap:8px;padding:2px 6px;border-radius:4px;cursor:pointer;text-decoration:none;color:var(--ink)}
+.fl a:hover{background:var(--hit)}.fl a.on{background:var(--hit);font-weight:600}.fl a span:last-child{color:var(--mute)}
+.fl a span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+section{padding:0}
+.tl{display:flex;align-items:flex-end;gap:1px;height:34px;padding:6px 16px 0;border-bottom:1px solid var(--line)}
+.tl div{flex:1;background:var(--accent);opacity:.55;min-width:2px;border-radius:2px 2px 0 0}.tl div:hover{opacity:1}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;background:var(--bg);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);padding:6px 10px;border-bottom:1px solid var(--line)}
+td{padding:5px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.r{cursor:pointer}tr.r:hover td{background:var(--hit)}tr.r.sel td{background:var(--hit);box-shadow:inset 2px 0 var(--accent)}
+td.p{color:var(--mute);max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.a{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{display:inline-block;padding:0 6px;border-radius:4px;border:1px solid var(--line);font-size:11px;white-space:nowrap}
+.pager{display:flex;gap:10px;align-items:center;padding:8px 14px;color:var(--mute);position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line)}
+.detail{border-left:1px solid var(--line);padding:14px;background:var(--panel)}
+.detail h2{font-size:13px;margin:0 0 2px}.detail .id{color:var(--mute);word-break:break-all}
+.kv{display:grid;grid-template-columns:70px 1fr;gap:3px 10px;margin:10px 0}.kv dt{color:var(--mute)}.kv dd{margin:0;word-break:break-all}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;overflow:auto;max-height:340px;margin:6px 0;white-space:pre-wrap;word-break:break-word}
+.refs h4{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:14px 0 4px}
+.ref{display:block;padding:3px 6px;border-radius:4px;cursor:pointer;font-size:12px}.ref:hover{background:var(--hit)}.ref small{color:var(--mute)}
+.empty{padding:40px;color:var(--mute);text-align:center}
+.tabs{display:flex;gap:4px}.tabs button.on{border-color:var(--accent);color:var(--accent)}
+.conf{padding:12px 16px;border-bottom:1px solid var(--line)}
+@media(max-width:1000px){main{grid-template-columns:1fr}aside,.detail{display:none}.detail.open{display:block;position:fixed;inset:0;z-index:5}}
+</style></head><body>
+<header>
+  <h1><span style="color:var(--violet)">◉</span> Pharos</h1><span class="dir mono" id="dir"></span>
+  <div class="stat"><b id="s-live">–</b><span>live entries</span></div>
+  <div class="stat"><b id="s-writers">–</b><span>writers</span></div>
+  <div class="stat" id="s-conf-w"><b id="s-conf">–</b><span>conflicts</span></div>
+  <div class="stat"><b id="s-ret">–</b><span>retracted</span></div>
+  <div class="stat" id="s-bad-w"><b id="s-bad">–</b><span>corrupt lines</span></div>
+  <span class="live" title="live: re-reads the log every 3s"></span>
+</header>
+<div class="bar">
+  <input type="search" id="q" placeholder="Search addr, id prefix, or anything in the body…" autofocus>
+  <select id="order"><option value="causal">Causal order</option><option value="recent">Newest first</option></select>
+  <div class="tabs"><button id="t-log" class="on">Log</button><button id="t-conf">Conflicts</button></div>
+  <span id="chips"></span>
+  <button id="sync" hidden title="Project the current filter into a SQLite file">Sync → SQLite</button>
+  <button id="export" title="Download the current filter as JSONL, ready to hand to a codec">Export view</button>
+</div>
+<main>
+  <aside id="side"></aside>
+  <section id="center"></section>
+  <div class="detail" id="detail"><div class="empty">Select an entry to see its body and the entries it reads, and those that read it.</div></div>
+</main>
+<script>
+const $=s=>document.querySelector(s), el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const api=async(p,q={})=>{const u=new URL(p,location.href);for(const[k,v]of Object.entries(q))if(v!==''&&v!=null)u.searchParams.set(k,v);return (await fetch(u)).json()};
+const SYNC=__SYNC__; if(SYNC)$('#sync').hidden=false;
+const st={cell:'',kind:'',by:'',q:'',order:'causal',offset:0,tab:'log',sel:null,ov:null}; const LIM=100;
+const GLY={NUL:'∅',SIG:'○',INS:'●',SEG:'｜',CON:'⋈',SYN:'△',DEF:'⊢',EVA:'⊨',REC:'◉'};const DOM=['NUL','SIG','INS','SEG','CON','SYN','DEF','EVA','REC'];const domColor=op=>{const i=DOM.indexOf(op);return i<3?'var(--blue)':i<6?'var(--copper)':'var(--violet)'};const glyph=cell=>GLY[String(cell).split('·')[0]]||'·';const opColor=domColor;
+const filt=()=>({cell:st.cell,kind:st.kind,by:st.by,q:st.q,order:st.order});
+const ago=t=>{if(!t)return'';const s=(Date.now()-new Date(t))/1000;return s<90?'just now':s<5400?Math.round(s/60)+'m ago':s<129600?Math.round(s/3600)+'h ago':Math.round(s/86400)+'d ago'};
+
+async function overview(){
+  const o=await api('/api/overview'); const changed=st.ov&&st.ov.stamp!==o.stamp; st.ov=o;
+  $('#dir').textContent=o.dir; $('#s-live').textContent=o.status.live.toLocaleString(); $('#s-writers').textContent=Object.keys(o.status.writers||{}).length;
+  $('#s-conf').textContent=o.conflicts; $('#s-ret').textContent=o.status.retracted; $('#s-bad').textContent=o.corrupt;
+  $('#s-conf-w').classList.toggle('warn',o.conflicts>0); $('#s-bad-w').classList.toggle('warn',o.corrupt>0);
+  side(); return changed;
+}
+function side(){
+  const o=st.ov, s=$('#side'); s.innerHTML=''; const counts=Object.fromEntries(o.facets.cell.map(x=>[x.name,x.n]));
+  s.append(el('h3',0,'Cells'));
+  const gh=el('div','gh',o.cells.grains.map(g=>`<span>${g}</span>`).join('')); s.append(gh);
+  const g=el('div','grid'); for(const op of o.cells.chain)for(const gr of o.cells.grains){const id=`${op}·${gr}`,n=counts[id]||0;
+    const c=el('div','cell'+(st.cell===id?' on':'')+(n?'':' zero'),`<i style="background:${opColor(op)}"></i><span class="op" style="color:${opColor(op)}">${GLY[op]} ${op}</span><span class="n">${n.toLocaleString()}</span>`);
+    c.title=id; if(n)c.onclick=()=>setf({cell:st.cell===id?'':id}); g.append(c)} s.append(g);
+  for(const[title,key]of[['Kinds','kind'],['Writers','by']]){s.append(el('h3',0,title));const l=el('div','fl');
+    for(const f of o.facets[key]){const a=el('a',st[key]===f.name?'on':'',`<span>${esc(f.name)}</span><span>${f.n.toLocaleString()}</span>`);a.onclick=()=>setf({[key]:st[key]===f.name?'':f.name});l.append(a)} s.append(l)}
+}
+function setf(p){Object.assign(st,p,{offset:0});chips();render()}
+function chips(){const c=$('#chips');c.innerHTML='';for(const k of['cell','kind','by'])if(st[k]){const x=el('span','chip',`${k}: ${esc(st[k])}<button title="clear">×</button>`);x.querySelector('button').onclick=()=>setf({[k]:''});c.append(x)}side()}
+
+async function render(){
+  const c=$('#center'); $('#t-log').classList.toggle('on',st.tab==='log'); $('#t-conf').classList.toggle('on',st.tab==='conf');
+  if(st.tab==='conf')return conflicts();
+  const [r,tl]=await Promise.all([api('/api/entries',{...filt(),offset:st.offset,limit:LIM}),api('/api/timeline',filt())]);
+  c.innerHTML=''; const max=Math.max(1,...tl.map(d=>d.n)); const t=el('div','tl'); for(const d of tl){const b=el('div');b.style.height=Math.max(2,34*d.n/max)+'px';b.title=`${d.day}: ${d.n.toLocaleString()}`;t.append(b)} c.append(t);
+  if(!r.rows.length){c.append(el('div','empty','No entries match.'));return}
+  const tb=el('table','',`<thead><tr><th>When</th><th>Cell</th><th>Kind</th><th>Address</th><th>Body</th><th>By</th></tr></thead>`); const body=el('tbody');
+  for(const e of r.rows){const op=e.cell.split('·')[0];const tr=el('tr','r'+(e.id===st.sel?' sel':''),
+    `<td class="mono" title="${esc(e.at)}">${ago(e.at)}</td><td><span class="tag" style="border-left:3px solid ${opColor(op)}"><span class="glyph" style="color:${opColor(op)}">${glyph(e.cell)}</span>${esc(e.cell)}</span></td><td>${esc(e.kind)}</td><td class="a mono" title="${esc(e.addr)}">${esc(e.addr)}</td><td class="p mono">${esc(e.preview)}</td><td>${esc(e.by)}</td>`);
+    tr.onclick=()=>pick(e.id); body.append(tr)} tb.append(body); c.append(tb);
+  const p=el('div','pager',`<button ${st.offset?'':'disabled'} id="pv">← Prev</button><span>${(st.offset+1).toLocaleString()}–${Math.min(st.offset+LIM,r.total).toLocaleString()} of ${r.total.toLocaleString()}</span><button id="nx" ${st.offset+LIM<r.total?'':'disabled'}>Next →</button>`);
+  c.append(p); p.querySelector('#pv').onclick=()=>{st.offset=Math.max(0,st.offset-LIM);render();c.scrollTop=0}; p.querySelector('#nx').onclick=()=>{st.offset+=LIM;render();c.scrollTop=0};
+}
+async function conflicts(){
+  const c=$('#center'),list=await api('/api/conflicts'); c.innerHTML='';
+  if(!list.length){c.append(el('div','empty','No conflicts. Concurrent entries that disagree about the same address and cell would be listed here; nothing is resolved silently.'));return}
+  for(const k of list){const d=el('div','conf',`<b>${esc(k.cell)}</b> <span class="mono">${esc(k.addr)}</span><div class="refs"></div>`);
+    [[k.a,k.by[0]],[k.b,k.by[1]]].forEach(([id,by])=>{const a=el('a','ref mono',esc(id.slice(0,16))+'… <small>by '+esc(by)+'</small>');a.onclick=()=>pick(id);d.querySelector('.refs').append(a)}); c.append(d)}
+}
+async function pick(id){
+  st.sel=id; const d=$('#detail'), r=await api('/api/entry',{id}); if(r.error){d.innerHTML=`<div class="empty">${esc(r.error)}</div>`;return}
+  const e=r.entry, op=e.cell.split('·')[0];
+  const refs=(t,a)=>a.length?`<h4>${t} (${a.length})</h4>`+a.map(x=>x.missing?`<span class="ref mono">${esc(x.id.slice(0,16))}… <small>not in this log</small></span>`:`<a class="ref" data-id="${x.id}"><span class="tag" style="border-left:3px solid ${opColor(x.cell.split('·')[0])}">${esc(x.cell)}</span> ${esc(x.kind)} <small class="mono">${esc(x.addr).slice(0,48)}</small></a>`).join(''):'';
+  d.className='detail open'; d.innerHTML=`<h2><span class="tag" style="border-left:3px solid ${opColor(op)}"><span class="glyph" style="color:${opColor(op)}">${glyph(e.cell)}</span>${esc(e.cell)}</span> ${esc(e.kind)}</h2><div class="id mono">${e.id}</div>
+  <dl class="kv"><dt>addr</dt><dd class="mono">${esc(e.addr)}</dd><dt>by</dt><dd>${esc(e.by)}</dd><dt>at</dt><dd class="mono">${esc(e.at)} <small style="color:var(--mute)">(informational; order is causal)</small></dd></dl>
+  <b>Body</b><pre>${esc(typeof e.body==='string'?e.body:JSON.stringify(e.body,null,2))}</pre>
+  <details><summary>Basis</summary><pre>${esc(JSON.stringify(e.basis,null,2))}</pre></details>
+  <div class="refs">${refs('Reads (of)',r.of)}${refs('Read by',r.citedBy)}${refs('Same address',r.sameAddr)}${refs('Saw (frontier)',r.seen)}</div>
+`;
+  d.scrollTop=0; d.querySelectorAll('a.ref').forEach(a=>a.onclick=()=>pick(a.dataset.id));
+}
+$('#q').oninput=(()=>{let t;return e=>{clearTimeout(t);t=setTimeout(()=>setf({q:e.target.value.trim()}),250)}})();
+$('#order').onchange=e=>setf({order:e.target.value});
+$('#t-log').onclick=()=>{st.tab='log';render()}; $('#t-conf').onclick=()=>{st.tab='conf';render()};
+$('#export').onclick=()=>{const u=new URL('/api/export.jsonl',location.href);for(const[k,v]of Object.entries(filt()))if(v)u.searchParams.set(k,v);location.href=u};
+$('#sync').onclick=async()=>{const f=prompt('Sync the current view into a SQLite file in\n'+SYNC.dir+'\n\nFile name:','pharos.db');if(!f)return;
+  const u=new URL('/api/sync/sqlite',location.href);u.searchParams.set('file',f);for(const[k,v]of Object.entries(filt()))if(v)u.searchParams.set(k,v);
+  const r=await (await fetch(u,{method:'POST',headers:{'x-pharos-token':SYNC.token}})).json();
+  alert(r.error?'Sync failed: '+r.error:`Synced to ${r.file}\n${r.added} added, ${r.alreadyThere} already there, ${r.totalInDb} rows in the table pharos_entries.`)};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#detail').classList.remove('open')});
+overview().then(render); setInterval(async()=>{if(await overview()&&st.tab==='log')render()},3000);
+</script></body></html>

@@ -6,6 +6,6 @@
   "license": "MIT",
   "private": true,
   "bin": { "pharos": "bin/pharos.mjs" },
-  "scripts": { "test": "node --test test/*.test.mjs" },
+  "scripts": { "test": "node --test test/*.test.mjs", "ui": "node ui/serve.mjs" },
   "engines": { "node": ">=20" }
 }

@@ -134,6 +134,14 @@ npm test
 
 The contract is [SPEC.md](SPEC.md); the 27 cells are data in [cells.json](cells.json). Notes beyond the spec: re-weaving identical content by the same writer returns the existing entry; a kind's entries must use the cell it was declared at; a pharos opened with `{frame:false}` is a merge target only until a frame arrives.
 
+## The viewer
+
+```
+node ui/serve.mjs --dir <log dir>        # http://127.0.0.1:7411, read-only
+```
+
+Browse any pharos log: search, filter by cell, kind and writer, open an entry to see what it reads and what reads it, list conflicts. It reads through `lib/pharos.mjs` (so it shows what `fold` shows), never weaves, and binds to 127.0.0.1. `--sync-dir <dir>` adds an opt-in button that copies the current view into a SQLite file (Node 22.5 or later).
+
 ## Licence
 
 MIT, see [LICENSE](LICENSE). Notices for reused work are in [THIRD-PARTY.md](THIRD-PARTY.md).
