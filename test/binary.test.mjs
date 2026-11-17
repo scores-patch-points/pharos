@@ -7,7 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { open, weave, fold, merge, entries, status, canonical, entryId, convertFile, exportJsonl, putBlob, getBlob, phbRecords, phbBackward } from '../lib/pharos.mjs';
+import { open, weave, fold, merge, entries, status, canonical, entryId, convertFile, exportJsonl, putBlob, getBlob, phbRecords, phbBackward, askHeads, heads } from '../lib/pharos.mjs';
 
 const tmp = (p = 'b-') => fs.mkdtempSync(path.join(os.tmpdir(), 'pharos-bin-' + p));
 const fresh = (writer, dir = tmp(), format = 'phb') => {
@@ -180,4 +180,52 @@ test('B8 walking backward by size visits exactly the forward records, reversed',
   const buf2 = fs.readFileSync(h.file), back = phbBackward(buf2).map((r) => r.offset), fwd = phbRecords(buf2).records.map((r) => r.offset);
   assert.deepEqual(back, fwd.filter((o) => o > buf.length).reverse());
   assert.ok(back.length >= 2, 'the resync record and the entry after it');
+});
+
+// ---- S2: the backward reader (ledgers/pharos-binary/PREREG-S2.md) ---------------------------------------------------------
+
+test('S2 askHeads equals the full-view heads: sequential updates, a fork of two concurrent writers merged in, retractions', () => {
+  const dir = tmp('s2a-'), A = fresh('a', dir), B = fresh('b', dir), C = fresh('c', dir), hs = [A, B, C];
+  for (let i = 0; i < 60; i++) note(hs[i % 3], `x${i % 5}`, { i });
+  const mk = (w) => { const d = tmp('s2fork-'); fs.cpSync(dir, d, { recursive: true }); return open('t', { dir: d, writer: w, format: 'phb', frame: false }); };
+  const FA = mk('fa'), FB = mk('fb');
+  for (let i = 0; i < 5; i++) { note(FA, 'x1', { fa: i }); note(FB, 'x1', { fb: i }); }
+  for (let i = 0; i < 10; i++) note(hs[i % 3], 'x2', { main: i });
+  merge(A, FA); merge(A, FB);
+  const r = weave(B, { cell: 'NUL·Figure', kind: 'retract', addr: 'retract:1', body: null, of: [fold(B, { addr: 'x3' }).entries.at(-1).id] });
+  weave(C, { cell: 'NUL·Figure', kind: 'retract', addr: 'retract:2', body: null, of: [r.id] });          // a retraction retracted: x3 is live again
+  weave(A, { cell: 'NUL·Figure', kind: 'retract', addr: 'retract:3', body: null, of: [fold(A, { addr: 'x4' }).entries.at(-1).id] });
+  const R = open('t', { dir, writer: 'r', frame: false, format: 'phb' });
+  for (const a of ['x0', 'x1', 'x2', 'x3', 'x4', 'absent']) assert.deepEqual(askHeads(R, a, 'INS·Figure').heads, heads(R, a, 'INS·Figure'), `address ${a}`);
+  assert.ok(heads(R, 'x1', 'INS·Figure').length >= 2, 'the fork left rival heads, which the reader must find');
+});
+
+test('S2 a recently updated address is answered from the newest records only', () => {
+  const dir = tmp('s2b-'), ws = ['a', 'b', 'c'].map((w) => fresh(w, dir));
+  for (let i = 0; i < 400; i++) note(ws[i % 3], `x${i % 40}`, { i });
+  const last = note(ws[0], 'hot', { last: true });
+  const R = open('t', { dir, writer: 'r', frame: false, format: 'phb' }), g = askHeads(R, 'hot', 'INS·Figure');
+  assert.deepEqual(g.heads, [last.id]);
+  assert.equal(g.early, true);
+  assert.ok(g.touched / g.total < 0.1, `read ${(100 * g.touched / g.total).toFixed(1)}% of the bytes`);
+});
+
+test('S2 an unchained record proves nothing: a rival head hidden below it is found (the targeted check for trusting every record)', () => {
+  const A1 = raw('fa', { at: '2026-01-01T00:00:01.000Z', addr: 'X', body: { a: 1 } }), B1 = raw('fb', { at: '2026-01-01T00:00:02.000Z', addr: 'X', body: { b: 1 } });
+  const H = raw('w', { at: '2026-01-01T00:00:03.000Z', addr: 'X', body: { h: 1 }, seen: [B1.id] });   // descends from B1, not from A1
+  const d = tmp('s2hid-'), j = path.join(d, 'src.jsonl'); fs.writeFileSync(j, [A1, B1, H].map(canonical).join('\n') + '\n'); convertFile(j, path.join(d, 'w.phb'));
+  fs.rmSync(j);
+  const R = open('t', { dir: d, writer: 'r', frame: false, format: 'phb' }), want = heads(R, 'X', 'INS·Figure');
+  assert.deepEqual(want, [A1.id, H.id].sort());
+  assert.deepEqual(askHeads(R, 'X', 'INS·Figure').heads, want, 'H is the newest record, but A1 is not an ancestor of it');
+});
+
+test('S2 damage met on the way falls back to the full view, saying so', () => {
+  const h = fresh('dmg'); for (let i = 0; i < 12; i++) note(h, 'y', { i });
+  // the reader proves its answer from the newest record alone when every record is chained, so damage it never has to read is never met;
+  // damage the NEWEST record (the one it must read first)
+  const buf = fs.readFileSync(h.file), recs = phbRecords(buf).records, last = recs.at(-1); buf[last.offset + 3] ^= 0x33; fs.writeFileSync(h.file, buf);
+  const R = open('t', { dir: h.dir, writer: 'r', frame: false, format: 'phb' }), g = askHeads(R, 'y', 'INS·Figure');
+  assert.ok(g.fallback, 'a broken record is met on the way in and the answer says it fell back');
+  assert.deepEqual(g.heads, heads(R, 'y', 'INS·Figure'));
 });

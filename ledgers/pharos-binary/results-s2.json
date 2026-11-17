@@ -1,0 +1,58 @@
+{
+ "steps": 3000,
+ "entries": 3207,
+ "files": [
+  "w0.phb",
+  "w1.phb",
+  "w2.phb",
+  "w3.phb"
+ ],
+ "questions": 1100,
+ "hotQuestions": 218,
+ "S2_1_mismatches": 0,
+ "S2_2_false_absent": 0,
+ "S2_3_hot_median_share": 0.04762911547856285,
+ "cold_median_share": 0.44421527568476976,
+ "absent_median_share": 1,
+ "early": {
+  "hot": 218,
+  "all": 962
+ },
+ "fallbacks": 0,
+ "S2_4": {
+  "chainedBitsTrue": 3087,
+  "chainedBitsFalse": 0,
+  "unchainedRecords": 120
+ },
+ "mutants": {
+  "M1_stop_at_first": {
+   "wrongInWorld": 1,
+   "caughtByWorld": true,
+   "targetedTestsFailed": 2,
+   "caughtByTargetedTests": true,
+   "caught": true
+  },
+  "M2_trust_every_record": {
+   "wrongInWorld": 0,
+   "caughtByWorld": false,
+   "targetedTestsFailed": 1,
+   "caughtByTargetedTests": true,
+   "caught": true
+  },
+  "M3_ignore_retractions": {
+   "wrongInWorld": 60,
+   "caughtByWorld": true,
+   "targetedTestsFailed": 1,
+   "caughtByTargetedTests": true,
+   "caught": true
+  }
+ },
+ "examples": [],
+ "verdict": {
+  "S2_1": true,
+  "S2_2": true,
+  "S2_3": true,
+  "S2_4": true,
+  "mutants": true
+ }
+}

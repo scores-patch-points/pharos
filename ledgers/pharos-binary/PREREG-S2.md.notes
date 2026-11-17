@@ -1,0 +1,34 @@
+2026-11-17T05:45:39Z — before the preregistered run (only a 300-step smoke run had been done): the touched-bytes
+count summed overlapping reads (each backward step re-reads a few bytes of its neighbour), so a full read counted ~110%.
+Changed to DISTINCT bytes (per file: header + the suffix actually read). No answer logic changed.
+
+2026-11-17T07:53:36Z — BEFORE the preregistered run (the first full run, started 05:41Z, never finished: 66 CPU-minutes over 1h39m in the
+evaluation phase, killed; no result of any kind was seen). Two changes, neither touching the answer a question is meant to get:
+1. PERFORMANCE: askHeads recomputed the causal order of everything read after EVERY record (quadratic). Now ancestry of the single head is
+   maintained incrementally (an entry read that is a known ancestor adds its own links), and the heads are recomputed only when a record at
+   the asked (addr, cell), or a retraction touching one, is read. Same stop rule, same fallback.
+2. CLARIFICATION of the chained bit, which the stop proof needs in its STRONG form: a version-2 record descends from EVERY earlier entry
+   record of its file (not just the previous one), true by construction for weave (the writer's frontier includes its whole file) and
+   what S2-4 checks. The reader trusts this attestation (it does not re-derive it); a reader that does not trust a writer reads that
+   file whole. The PREREG-S2 text said "the previous ENTRY record" and "a reader re-checks the bit": the first is superseded by the strong
+   form, the second is NOT implemented and is stated here as a limit.
+3. The mutant sites are reworded to the new code (M1 stop at the first single head; M2 trust every record as chained; M3 ignore retractions in
+   askHeads); the behaviours are the preregistered ones.
+
+2026-11-17T07:55:14Z — still BEFORE the preregistered run. The first smoke run of the rewritten reader (300 steps) showed 34 wrong answers of 334 and
+92% of the log read on hot addresses: the rewrite recomputed heads only when a record at the asked address changed, but a record ELSEWHERE can
+complete the ancestry path between two candidates, so stale extra heads remained (wrong at the end, and they also blocked early stops). Fixed by
+re-checking once per round while more than one candidate stands. The smoke runs are not the preregistered run.
+
+2026-11-17T07:58:08Z — still BEFORE the preregistered run. Instrumenting a scratch copy showed why hot addresses still read 92%: the reader advanced one
+record per file per round, but the files are unequal (157 vs 90-109 records, with unchained merged blocks in one), so the intermediate entries
+that chain the proof arrive late. Verified premise: the head descends from all 441 earlier entries; a proof exists. Change: read NEWEST-FIRST across
+files (a k-way backward merge: always advance the file whose next record has the latest `at`); `at` only orders the reads, the stop proof stays
+structural. And while more than one candidate stands, re-check on a geometric schedule (every max(files, 5% of entries read) records), not every record.
+Both change cost only; answers are the same or the reading is longer, never shorter. These are design changes made after smoke runs, before the
+preregistered run; S2-3's 5% bar is unchanged and may well fail (a hot head lies in the last 10%, so a median of 5% of entries are NEWER than it).
+
+2026-11-17T07:58:48Z — still BEFORE the preregistered run. The smoke run showed M2 (trust every record as chained) is not caught: with ONE writer per fork, a merged block is a
+causally ordered chain, so trusting it cannot give a wrong answer. M2 can only fail where a merge brings in TWO CONCURRENT writers (the newest block record
+descends from the head, an older one is a hidden rival). The world's forks are therefore two concurrent writers each (forkA, forkB, from separate copies),
+merged one after the other. This strengthens the power check; the preregistered world description ("concurrent forks") is unchanged in kind.
