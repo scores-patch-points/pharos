@@ -37,6 +37,17 @@ Unweaving is a **retraction entry** (kind `retract`, `of` the retracted id), nev
 
 JSONL, one file per writer under `$PHAROS` (default `~/.pharos/<name>/`): `<writer>.jsonl`. One writer never writes another's file, so merge is a grow-only set union (no locking, no conflicts). A reader reads every `*.jsonl` and dedups by `id`.
 
+**Binary storage (PHB1).** A writer may instead store `<writer>.phb`; the default stays JSONL (`open(name, {format: 'phb'})` or `$PHAROS_FORMAT`). A directory may hold both kinds and is read as one union, deduped by `id`. The entry is still *defined* by its canonical JSON and its id is still the sha256 of that, so binary is storage only: `convertFile` turns a JSONL file into a PHB file and back and reproduces every valid line byte for byte, and `exportJsonl` is the JSONL fold of a pharos.
+
+```
+file    := "PHB1" writer(varint length + utf8) record*
+record  := kind(1) length(varint) payload(length) chain(8) size(4, big-endian: the whole record's byte length)
+chain   := sha256(prevChain || kind || payload)[0:8]        genesis = sha256("PHB1\0" || writer)[0:8]
+kinds   := 0x01 ENTRY  0x02 BLOB (raw bytes, addressed by sha256)  0x10 RESYNC
+```
+
+Each record is checked against its predecessor, so a torn tail loses only that record and one flipped byte cuts reading off at exactly that record (nothing after it in that file is read until a RESYNC; nothing is invented); a stored id that does not match its content is reported, never read. After damage a writer appends `MARKER` + a RESYNC record, so appends continue past the damage and never over it. `size` lets a reader walk a file backward (`phbBackward`) and check one record against the 8 bytes before it. `putBlob`/`getBlob` store a payload once by its hash; `merge` copies the entries and the blobs the target lacks. Measured (`ledgers/pharos-binary/RESULTS-S1.md`): 56.7% of the JSONL bytes on a 20,000-entry log, identical views, a full cold load about 35% slower (hash chain and JavaScript decoding), accepted. Because the library's bytes changed, every `pharos.json` pointer pinned to the previous `lib/pharos.mjs` hash must be re-pinned (`install` writes the new hash).
+
 ## Order and fold
 
 Order is causal: entry A precedes B if `A.id` is in the transitive `seen` or `of` of B. Concurrent entries are ordered by cell `rank`, then `id` (deterministic). `fold(view)` returns the entries in that order with retractions applied and **reports** concurrent entries that disagree on the same `addr` and cell as conflicts. It never resolves them silently.

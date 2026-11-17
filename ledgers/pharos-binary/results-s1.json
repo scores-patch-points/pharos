@@ -1,0 +1,51 @@
+{
+ "entries": 20000,
+ "roundTrip": true,
+ "sameViews": true,
+ "size": {
+  "jsonl": 7495578,
+  "phb": 4245927,
+  "ratio": 0.5665
+ },
+ "speed": {
+  "jsonl": [
+   257.396542,
+   255.075625,
+   274.943125,
+   295.03975,
+   324.515458
+  ],
+  "phb": [
+   369.234458,
+   383.626084,
+   417.585834,
+   468.854541,
+   434.755833
+  ],
+  "medianJsonl": 274.943125,
+  "medianPhb": 417.585834
+ },
+ "mutants": {
+  "M1_no_chain_check": {
+   "target": "B3b",
+   "failed": 1,
+   "caught": true
+  },
+  "M2_no_id_check": {
+   "target": "B3c",
+   "failed": 1,
+   "caught": true
+  },
+  "M3_size_off_by_one": {
+   "target": "B8",
+   "failed": 1,
+   "caught": true
+  }
+ },
+ "verdict": {
+  "B1_scale": true,
+  "B4": true,
+  "B5": false,
+  "mutants": true
+ }
+}
