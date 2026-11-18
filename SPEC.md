@@ -98,7 +98,7 @@ No reading, no embeddings, no perceiver logic, no editing tools. Those are holon
 | rule | what is checked |
 |---|---|
 | ONE-DOOR | `holon.json` declares `door` ("path/to/file.mjs#exportName"); the file exists and exports it |
-| PRIMED | every entry of `needs` (`{ name, env?, paths, contains, how? }`) resolves to an existing path holding the files it says; a missing one is named with every place looked |
+| PRIMED | every entry of `needs` (`{ name, env?, paths, contains, how? }`) resolves to an existing path holding the files it says; an `env` that is set is the only place tried; a missing one is named with every place looked |
 | RULES-CURRENT | `holon.json` `rules` equals the current hash of `rules/rules.json`; otherwise the repo is stale until `pharos ack --target DIR` is run on purpose |
 | SAY-WHEN-REFUSED | a refused gate leaves one chatter line (what: `gate_refused`, detail: the failed rules) |
 

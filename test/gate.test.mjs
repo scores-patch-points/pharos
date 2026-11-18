@@ -39,6 +39,10 @@ test('PRIMED: a missing need refuses, names what and where it looked, honours th
   const pri = tmp(); process.env.GATE_TEST_PRIORS = pri;
   try { assert.equal(gate(dir, { chatter: false }).ok, false, 'a folder without the file is not enough'); fs.writeFileSync(path.join(pri, 'pos-eng.json'), '{}'); assert.equal(gate(dir, { chatter: false }).ok, true); }
   finally { delete process.env.GATE_TEST_PRIORS; }
+  // an env var that is set is authoritative: a good fallback path must not rescue a bad env
+  const good2 = tmp(); fs.writeFileSync(path.join(good2, 'pos-eng.json'), '{}');
+  const dir2 = repo({ holon: good({ needs: [{ ...need, paths: [good2] }] }) }); assert.equal(gate(dir2, { chatter: false }).ok, true, 'the fallback works when the env is unset');
+  process.env.GATE_TEST_PRIORS = tmp(); try { assert.equal(gate(dir2, { chatter: false }).ok, false, 'a set but bad env is not rescued by a fallback'); } finally { delete process.env.GATE_TEST_PRIORS; }
 });
 
 test('RULES-CURRENT: a stale or missing acknowledgement refuses until ack is run on purpose', () => {
