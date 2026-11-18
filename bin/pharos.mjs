@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import * as P from '../lib/pharos.mjs';
+import { chatter, readChatter } from '../lib/chatter.mjs';
 import path from 'node:path';
 import { isDoorCommand, main as doorMain } from '../install/cli.mjs';
 import { checkTarget } from '../install/guard.mjs';
@@ -14,7 +15,9 @@ const USAGE = `pharos <command> [--name N] [--dir D] [--writer W]
   status
   merge <otherDir>             union another pharos dir into this one
   install <repoDir>            write pharos.json + holon.json stub
-  undo <repoDir>               remove exactly what install wrote`;
+  undo <repoDir>               remove exactly what install wrote
+  chatter [--tail N] [--level L] [--where W] [--what X] [--since ISO]   read the debugging trail (not data)
+  chatter-write --where W --what X [--level L] [--detail JSON]            write one chatter line (best effort)`;
 
 // --help prints the longer text below on stdout; no-args and unknown commands keep the original short usage (byte-identical to before)
 const HELP = `pharos <command> [options]
@@ -39,6 +42,10 @@ Library commands (the shared log):
   merge <otherDir>                     union another pharos dir into this one
   install <repoDir>                    legacy: write pharos.json + holon.json stub
   undo <repoDir>                       legacy: remove exactly what install wrote
+
+Chatter (the debugging trail: NOT data, never folded):
+  chatter [--tail N] [--level debug|info|warn|error] [--where W] [--what X] [--since ISO]
+  chatter-write --where W --what X [--level L] [--detail JSON]
 
   pharos --help                        this text`;
 
@@ -96,6 +103,11 @@ try {
       if (!arg) throw new P.PharosError('USAGE', 'merge needs the other pharos dir');
       if (!fs.existsSync(arg)) throw new P.PharosError('NO_SOURCE', `${arg} does not exist`);
       out = P.merge(h(), P.open(flags.name || 'default', { dir: arg, writer: 'merge-source', frame: false }));
+      break;
+    case 'chatter': out = readChatter({ tail: flags.tail, level: flags.level, where: flags.where, what: flags.what, since: flags.since, name: flags.name, dir: flags.dir }); break;
+    case 'chatter-write':
+      if (!flags.where || !flags.what) throw new P.PharosError('USAGE', 'chatter-write needs --where and --what');
+      out = chatter({ level: flags.level, where: flags.where, what: flags.what, detail: flags.detail === undefined ? undefined : json(flags.detail, 'detail') }, { name: flags.name, dir: flags.dir, writer: flags.writer });
       break;
     case 'install': if (!arg) throw new P.PharosError('USAGE', 'install needs a repo dir'); guardLegacy(arg); out = P.install(arg); break;
     case 'undo': if (!arg) throw new P.PharosError('USAGE', 'undo needs a repo dir'); guardLegacy(arg); out = P.undo(arg); break;

@@ -79,3 +79,12 @@ For a repo: list every `import`/`require`/path/URL/CLI call that reaches a sibli
 ## Not in this repo
 
 No reading, no embeddings, no perceiver logic, no editing tools. Those are holons that live elsewhere and talk through here.
+
+## Chatter (the debugging trail; not data)
+
+`lib/chatter.mjs`. Where a repo says "I had an issue" (a read refused for want of priors, a prior that did not load, a door entered the wrong way, a guard that would have fired) so the next session, or the owner, can see what went wrong. It is **not** the log: no `id`, no `seen`, no `cell`, no causal order, never folded, merged or retracted, and nothing reads it to decide anything.
+
+- `chatter({ level, where, what, detail? }, opts?)` is best effort: it never throws and never blocks the caller. `where` names the writer's own repo or file as provenance only; chatter never dispatches on it.
+- Bounded: a line is at most 8 KB (an over-long `detail` is cut and marked `cut`); a file rotates at 1 MB and keeps one generation; one writer writes one file (`<writer>.log`), so there is no locking.
+- Lives in `$PHAROS_CHATTER`, else `<pharos dir>/chatter/`. CLI: `pharos chatter [--tail N] [--level L] [--where W] [--what X] [--since ISO]`, `pharos chatter-write --where W --what X [--level L] [--detail JSON]`.
+- A repo that fails loudly (an exception, an exit code) should also leave one chatter line, so the failure is findable later; chatter is never a substitute for failing.
