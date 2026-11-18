@@ -88,3 +88,18 @@ No reading, no embeddings, no perceiver logic, no editing tools. Those are holon
 - Bounded: a line is at most 8 KB (an over-long `detail` is cut and marked `cut`); a file rotates at 1 MB and keeps one generation; one writer writes one file (`<writer>.log`), so there is no locking.
 - Lives in `$PHAROS_CHATTER`, else `<pharos dir>/chatter/`. CLI: `pharos chatter [--tail N] [--level L] [--where W] [--what X] [--since ISO]`, `pharos chatter-write --where W --what X [--level L] [--detail JSON]`.
 - A repo that fails loudly (an exception, an exit code) should also leave one chatter line, so the failure is findable later; chatter is never a substitute for failing.
+
+## The gate (a repo works only if it flows through pharos)
+
+`lib/gate.mjs`, `rules/rules.json`, and the verbs `pharos gate`, `pharos ack`, `pharos rules`. The rules are held here, once, as data; a repo carries only its `holon.json` (a pointer: its door, what it needs, the hash of the rules it acknowledged).
+
+`gate(dir)` reads `dir/holon.json` and reports, never throws on a bad repo:
+
+| rule | what is checked |
+|---|---|
+| ONE-DOOR | `holon.json` declares `door` ("path/to/file.mjs#exportName"); the file exists and exports it |
+| PRIMED | every entry of `needs` (`{ name, env?, paths, contains, how? }`) resolves to an existing path holding the files it says; a missing one is named with every place looked |
+| RULES-CURRENT | `holon.json` `rules` equals the current hash of `rules/rules.json`; otherwise the repo is stale until `pharos ack --target DIR` is run on purpose |
+| SAY-WHEN-REFUSED | a refused gate leaves one chatter line (what: `gate_refused`, detail: the failed rules) |
+
+A repo calls the gate at its door and **refuses** when it fails (khora: `native/the-fold/pharos-gate.mjs`, called by `readToWeft` and `reading.js::readDocument`). Changing a rule changes the hash, so every acknowledging repo is stale until it re-acknowledges: no repo keeps its own copy of the rules. A repo finds pharos by `PHAROS_HOME`, else a `pharos` checkout beside it, and refuses, naming the clone command, when it finds none. `pharos gate` exits 0 when the repo may work and 1 when it may not.

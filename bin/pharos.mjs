@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import * as P from '../lib/pharos.mjs';
 import { chatter, readChatter } from '../lib/chatter.mjs';
+import { gate, ack, rules as gateRules } from '../lib/gate.mjs';
 import path from 'node:path';
 import { isDoorCommand, main as doorMain } from '../install/cli.mjs';
 import { checkTarget } from '../install/guard.mjs';
@@ -16,6 +17,9 @@ const USAGE = `pharos <command> [--name N] [--dir D] [--writer W]
   merge <otherDir>             union another pharos dir into this one
   install <repoDir>            write pharos.json + holon.json stub
   undo <repoDir>               remove exactly what install wrote
+  gate --target DIR            may this repo work? exit 0 ok, 1 refused (names every failed rule); leaves chatter on refusal
+  ack --target DIR             acknowledge the current rules in DIR/holon.json
+  rules                        print the rules
   chatter [--tail N] [--level L] [--where W] [--what X] [--since ISO]   read the debugging trail (not data)
   chatter-write --where W --what X [--level L] [--detail JSON]            write one chatter line (best effort)`;
 
@@ -104,6 +108,9 @@ try {
       if (!fs.existsSync(arg)) throw new P.PharosError('NO_SOURCE', `${arg} does not exist`);
       out = P.merge(h(), P.open(flags.name || 'default', { dir: arg, writer: 'merge-source', frame: false }));
       break;
+    case 'gate': { if (!flags.target) throw new P.PharosError('USAGE', 'gate needs --target DIR'); out = gate(flags.target); console.log(JSON.stringify(out, null, 2)); process.exit(out.ok ? 0 : 1); }
+    case 'ack': if (!flags.target) throw new P.PharosError('USAGE', 'ack needs --target DIR'); out = ack(flags.target); break;
+    case 'rules': out = gateRules(); break;
     case 'chatter': out = readChatter({ tail: flags.tail, level: flags.level, where: flags.where, what: flags.what, since: flags.since, name: flags.name, dir: flags.dir }); break;
     case 'chatter-write':
       if (!flags.where || !flags.what) throw new P.PharosError('USAGE', 'chatter-write needs --where and --what');
