@@ -2,9 +2,35 @@
   "about": "THE RULES every repo that works with pharos holds. Data, not code: pharos's own gate (lib/gate.mjs) reads these, and each repo acknowledges the hash of this file in its holon.json (`pharos ack`). Change a rule and every repo is stale until it re-acknowledges, which is the point: no repo carries its own copy of the rules.",
   "v": 1,
   "rules": [
-    { "id": "ONE-DOOR", "statement": "A repo that reads or acts declares ONE door in holon.json (`door`: \"path/to/file.mjs#exportName\"). The file must exist and export it. There is no second door that matters.", "enforced": "gate: holon.json has a door, the file exists, and it names the export" },
-    { "id": "PRIMED", "statement": "What the door needs in order to work (priors, a sibling checkout, a folder) is declared in holon.json (`needs`). If a need is absent the repo REFUSES, naming what is missing and where it looked; it never returns thin output that looks like a result.", "enforced": "gate: every declared need resolves to an existing path that holds the files it says it holds" },
-    { "id": "RULES-CURRENT", "statement": "A repo acknowledges the rules it works under by hash (`rules` in holon.json). A repo whose acknowledged hash is not the current one is stale and refuses until it re-acknowledges on purpose.", "enforced": "gate: holon.json `rules` equals the current rules hash" },
-    { "id": "SAY-WHEN-REFUSED", "statement": "Every refusal also leaves one chatter line (lib/chatter.mjs), so the failure is findable later. Chatter is a trail, never a substitute for failing.", "enforced": "gate: a failed gate writes chatter (best effort)" }
+    {
+      "id": "ONE-DOOR",
+      "statement": "A repo that reads or acts declares ONE door in holon.json (`door`: \"path/to/file.mjs#exportName\"). The file must exist and export it. There is no second door that matters.",
+      "enforced": "gate: holon.json has a door, the file exists, and it names the export"
+    },
+    {
+      "id": "PRIMED",
+      "statement": "What the door needs in order to work (priors, a sibling checkout, a folder) is declared in holon.json (`needs`). If a need is absent the repo REFUSES, naming what is missing and where it looked; it never returns thin output that looks like a result.",
+      "enforced": "gate: every declared need resolves to an existing path that holds the files it says it holds"
+    },
+    {
+      "id": "RULES-CURRENT",
+      "statement": "A repo acknowledges the rules it works under by hash (`rules` in holon.json). A repo whose acknowledged hash is not the current one is stale and refuses until it re-acknowledges on purpose.",
+      "enforced": "gate: holon.json `rules` equals the current rules hash"
+    },
+    {
+      "id": "WRITES-TO-PHAROS",
+      "statement": "A repo does not act unless it can write to a pharos, and it writes one entry for every act it performs (`record`). An act whose entry could not be written is refused: nothing is done off the record.",
+      "enforced": "gate: the pharos log opens and is writable; record(): the entry is woven or the act is refused"
+    },
+    {
+      "id": "FULL-CAPACITY",
+      "statement": "A repo brings every capacity it HAS to bear on every act. The capacities available for the act and the ones used are stated in the record; if any available capacity was not used, the act is refused. A caller who knowingly does less says so (`degraded: true`), and the entry is written marked degraded and leaves a chatter line: never an act that looks whole and is not.",
+      "enforced": "record(): available minus used must be empty, or degraded: true is declared and marked"
+    },
+    {
+      "id": "SAY-WHEN-REFUSED",
+      "statement": "Every refusal also leaves one chatter line (lib/chatter.mjs), so the failure is findable later. Chatter is a trail, never a substitute for failing.",
+      "enforced": "gate: a failed gate writes chatter (best effort)"
+    }
   ]
 }

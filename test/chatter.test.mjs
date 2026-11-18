@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { chatter, readChatter } from '../lib/chatter.mjs';
 import * as P from '../lib/pharos.mjs';
 
+process.env.PHAROS_CHATTER = fs.mkdtempSync(path.join(os.tmpdir(), 'pharos-chatter-default-')); // a call with no dir never reaches the real ~/.pharos
 const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'pharos.mjs');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'pharos-chatter-'));
 

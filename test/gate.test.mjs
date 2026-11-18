@@ -5,9 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { gate, ack, rulesHash } from '../lib/gate.mjs';
+import { gate, ack, rulesHash, record } from '../lib/gate.mjs';
+import * as P from '../lib/pharos.mjs';
 import { readChatter } from '../lib/chatter.mjs';
 
+// tests never touch the real ~/.pharos: the log and the chatter go to a temp directory
+process.env.PHAROS = fs.mkdtempSync(path.join(os.tmpdir(), 'pharos-gate-log-')); process.env.PHAROS_CHATTER = fs.mkdtempSync(path.join(os.tmpdir(), 'pharos-gate-chatter-'));
 const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'pharos.mjs');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'pharos-gate-'));
 function repo({ holon, files = { 'door.mjs': 'export function read() {}\n' } } = {}) {
@@ -72,4 +75,35 @@ test('changing the rules changes the hash, so every acknowledging repo goes stal
   const f = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'rules', 'rules.json'); const before = fs.readFileSync(f); const h = rulesHash();
   try { fs.writeFileSync(f, before.toString().replace('ONE-DOOR', 'ONE-DOOR ')); assert.notEqual(rulesHash(), h); } finally { fs.writeFileSync(f, before); }
   assert.equal(rulesHash(), h);
+});
+
+const act = (over = {}) => ({ door: 'door.mjs#read', addr: 'sha256:abc', body: { language: 'eng' }, capacities: { available: ['pos', 'morphology', 'pronoun-binding'], used: ['pos', 'morphology', 'pronoun-binding'] }, ...over });
+
+test('WRITES-TO-PHAROS: an act is woven into the log, with the capacities and the rules it stood on', () => {
+  const dir = repo({ holon: good() }); const pharosDir = tmp(); const e = record(dir, act({ pharosDir }));
+  assert.equal(e.kind, 'act'); assert.equal(e.cell, 'SIG·Figure'); assert.equal(e.body.degraded, false); assert.deepEqual(e.body.capacities.missing, []); assert.equal(e.basis.rules, rulesHash()); assert.equal(e.basis.repo, 'demo');
+  const h = P.open('demo', { dir: pharosDir }); assert.equal(P.entries(h).filter((e) => e.kind === 'act').length, 1, 'it is in the log');
+  record(dir, act({ pharosDir, addr: 'sha256:def' })); assert.equal(P.entries(P.open('demo', { dir: pharosDir })).filter((e) => e.kind === 'act').length, 2, 'the kind is declared once and every act adds an entry');
+});
+
+test('FULL-CAPACITY: an available capacity that was not used refuses the act, writes nothing, and leaves chatter', () => {
+  const dir = repo({ holon: good() }); const pharosDir = tmp(); const c = tmp();
+  assert.throws(() => record(dir, act({ pharosDir, chatterDir: c, capacities: { available: ['pos', 'pronoun-binding'], used: ['pos'] } })), (e) => e.code === 'FULL_CAPACITY' && /pronoun-binding/.test(e.message) && /degraded: true/.test(e.message));
+  assert.equal(P.entries(P.open('demo', { dir: pharosDir })).filter((e) => e.kind === 'act').length, 0, 'nothing was written off a refused act');
+  assert.equal(readChatter({ dir: c })[0].what, 'capacity_missing');
+});
+
+test('FULL-CAPACITY: doing less is allowed only knowingly: degraded:true writes the entry MARKED and leaves a warning', () => {
+  const dir = repo({ holon: good() }); const pharosDir = tmp(); const c = tmp();
+  const e = record(dir, act({ pharosDir, chatterDir: c, degraded: true, capacities: { available: ['pos', 'pronoun-binding'], used: ['pos'] } }));
+  assert.equal(e.body.degraded, true); assert.deepEqual(e.body.capacities.missing, ['pronoun-binding']);
+  const [l] = readChatter({ dir: c }); assert.equal(l.level, 'warn'); assert.equal(l.what, 'capacity_missing');
+});
+
+test('WRITES-TO-PHAROS: if the entry cannot be written the act is refused; a repo whose pharos cannot be written fails the gate', () => {
+  const file = path.join(tmp(), 'a-file'); fs.writeFileSync(file, 'x'); const bad = path.join(file, 'under');
+  const dir = repo({ holon: good() }); const c = tmp();
+  assert.throws(() => record(dir, act({ pharosDir: bad, chatterDir: c })), (e) => e.code === 'WRITE_REFUSED' && /Nothing is done off the record/.test(e.message));
+  assert.equal(readChatter({ dir: c })[0].what, 'write_refused');
+  const r = gate(dir, { chatter: false, pharosDir: bad }); assert.ok(r.failures.some((f) => f.rule === 'WRITES-TO-PHAROS'), JSON.stringify(r.failures));
 });
