@@ -49,3 +49,11 @@ test('tail: after an append only the new bytes are read; a shrunk file or change
 
 test('an unregistered fold is a typed gap naming how to fix it', () => { assert.throws(() => getFold('nope'), /register it with registerFold/); });
 test('position changes on append and not otherwise', () => { const h = logOf('jsonl'), p = position(h.dir); assert.equal(position(h.dir), p); note(h, 'a', {}); assert.notEqual(position(h.dir), p); });
+
+test('the kinds fold gives a layer only the kinds it asks for, in the same order as the full fold, and a retracted entry is not returned', () => {
+  const h = logOf('jsonl'); weave(h, { cell: 'DEF·Figure', kind: 'kind', addr: 'kind:other', body: { name: 'other', cell: 'INS·Figure' } });
+  const a = note(h, 'a', { i: 1 }); weave(h, { cell: 'INS·Figure', kind: 'other', addr: 'o', body: {} }); note(h, 'b', { i: 2 }); const c = note(h, 'c', { i: 3 });
+  weave(h, { cell: 'NUL·Figure', kind: 'retract', addr: 'retract:1', body: null, of: [c.id] });
+  const got = runFold('kinds', h, { kinds: ['note'] }); assert.deepEqual(got.map((e) => e.addr), ['a', 'b']); assert.ok(got.every((e) => e.kind === 'note'));
+  assert.deepEqual(runFold('kinds', h, { kinds: ['note', 'other'] }).map((e) => e.addr), ['a', 'o', 'b']);
+});
